@@ -532,9 +532,9 @@ relStr = "War"
 relStyle = StyleRed
 }
 line := fmt.Sprintf("%s: %s", c.Name, relStr)
-action := " [Enter=make peace]"
+action := " [Enter=declare war]"
 if rel == game.RelationWar {
-action = " [Enter=declare war]"
+action = " [Enter=make peace]"
 }
 if i == m.MenuCursor {
 sb.WriteString(StyleSelectedUnit.Render("> "+line) + relStyle.Render(action) + "\n")
