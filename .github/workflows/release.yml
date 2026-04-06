@@ -1,0 +1,64 @@
+name: Release
+on:
+  release:
+    types: [created]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - goos: linux
+            goarch: amd64
+          - goos: linux
+            goarch: arm64
+          - goos: linux
+            goarch: 386
+          - goos: darwin
+            goarch: amd64
+          - goos: darwin
+            goarch: arm64
+          - goos: windows
+            goarch: amd64
+          - goos: windows
+            goarch: arm64
+          - goos: windows
+            goarch: 386
+          - goos: freebsd
+            goarch: amd64
+          - goos: freebsd
+            goarch: arm64
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+
+      - name: Build binary
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+        run: |
+          EXT=""
+          if [ "$GOOS" = "windows" ]; then EXT=".exe"; fi
+          OUTPUT="civ-tui-${GOOS}-${GOARCH}${EXT}"
+          go build -ldflags="-s -w" -o "${OUTPUT}" .
+          if [ "$GOOS" != "windows" ]; then
+            tar czf "${OUTPUT%.exe}.tar.gz" "${OUTPUT}"
+          else
+            zip "${OUTPUT%.exe}.zip" "${OUTPUT}"
+          fi
+
+      - name: Upload release asset
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ github.event.release.tag_name }}"
+          for f in *.tar.gz *.zip; do
+            [ -f "$f" ] && gh release upload "$TAG" "$f" --clobber
+          done
