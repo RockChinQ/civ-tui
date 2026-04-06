@@ -54,6 +54,7 @@ make run
 | `D` | Diplomacy menu |
 | `R` | Ranged attack mode (Archer) |
 | `I` | Build improvement (Worker) |
+| `V` | Inspect tile details |
 | `W` | Wait / skip unit turn |
 | `N` | Cycle to next unit |
 | `S` | Save game |

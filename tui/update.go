@@ -68,6 +68,8 @@ func (m Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m.handleCityMenu(msg)
 	case MenuPromotion:
 		return m.handlePromotionMenu(msg)
+	case MenuInspect:
+		return m.handleInspectMenu(msg)
 	}
 
 	switch msg.String() {
@@ -108,6 +110,9 @@ func (m Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m.saveGame()
 	case "i", "I":
 		return m.startImprovement()
+	case "v", "V":
+		m.ActiveMenu = MenuInspect
+		return m, nil
 	case "enter":
 		// If on own city with no unit, open city details
 		city := m.Game.GetCityAt(m.CursorX, m.CursorY)
@@ -479,6 +484,14 @@ func (m Model) diplomacyCivs() []*model.Civ {
 func (m Model) handleCityMenu(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch msg.String() {
 	case "esc", "enter", "b", "B":
+		m.ActiveMenu = MenuNone
+	}
+	return m, nil
+}
+
+func (m Model) handleInspectMenu(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	switch msg.String() {
+	case "esc", "v", "V":
 		m.ActiveMenu = MenuNone
 	}
 	return m, nil

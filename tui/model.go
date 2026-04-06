@@ -25,6 +25,7 @@ const (
 	MenuRanged
 	MenuDiplomacy
 	MenuPromotion
+	MenuInspect
 )
 
 type Model struct {

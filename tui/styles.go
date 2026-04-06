@@ -57,3 +57,8 @@ var (
 	StyleRangeHighlight = lipgloss.NewStyle().Background(lipgloss.Color("52")).Foreground(lipgloss.Color("255"))
 	StyleMoveHighlight  = lipgloss.NewStyle().Background(lipgloss.Color("22")).Foreground(lipgloss.Color("255"))
 )
+
+var StylePopup = lipgloss.NewStyle().
+	Border(lipgloss.DoubleBorder()).
+	BorderForeground(lipgloss.Color("226")).
+	Padding(1, 2)
