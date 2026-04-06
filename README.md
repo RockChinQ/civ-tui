@@ -4,13 +4,7 @@
 
 Build cities, research technologies, command armies, negotiate diplomacy -- all from the comfort of your command line. No GUI, no browser, no game engine. Just you, your terminal, and the quest for world domination.
 
-```
-  ~~  ~~  ~~  ♜R  🌲  🌲  ⛰   ⛰   🌲  .   .   .   🏛E  .   ░░  ░░
-  ~~  ~~  🌊  .   🌲  ♞R  .   🌲  .   .   .   .   .   .   ░░  ░░
-  ~~  🌊  .   .   🏛R  .   .   .   .   🌾  ⛏   .   .   .   .   ░░
-  🌊  .   .   🌾  .   .   .   ⛰   ⛰   .   .   .   .   ░░  ░░  ░░
-  .   .   .   .   .   .   🏜   🏜   .   .   ░░  ░░  ░░  ░░  ░░  ░░
-```
+![Game Screen](docs/gamescreen.png)
 
 ---
 
