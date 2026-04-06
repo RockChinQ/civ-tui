@@ -2,6 +2,8 @@ package tui
 
 import (
 "github.com/RockChinQ/civ-tui/game"
+"github.com/RockChinQ/civ-tui/game/model"
+"github.com/RockChinQ/civ-tui/game/worldmap"
 tea "github.com/charmbracelet/bubbletea"
 )
 
@@ -26,29 +28,29 @@ MenuPromotion
 )
 
 type Model struct {
-Game             *game.Game
-CursorX          int
-CursorY          int
-ViewportX        int
-ViewportY        int
-SelectedUnit     *game.Unit
-ActiveMenu       MenuType
-MenuCursor       int
-Width            int
-Height           int
-MapWidth         int
-MapHeight        int
-InfoWidth        int
-MsgHeight        int
-CurrentScreen    Screen
-MainMenuCursor   int
-InSettings       bool
-SettingsCursor   int
-SettingsMapSize  game.MapSize
+Game              *game.Game
+CursorX           int
+CursorY           int
+ViewportX         int
+ViewportY         int
+SelectedUnit      *model.Unit
+ActiveMenu        MenuType
+MenuCursor        int
+Width             int
+Height            int
+MapWidth          int
+MapHeight         int
+InfoWidth         int
+MsgHeight         int
+CurrentScreen     Screen
+MainMenuCursor    int
+InSettings        bool
+SettingsCursor    int
+SettingsMapSize   worldmap.MapSize
 SettingsNumAICivs int
 SettingsDifficulty int
-RangeMode        bool
-PendingPromotion *game.Unit
+RangeMode         bool
+PendingPromotion  *model.Unit
 }
 
 func NewModel() Model {
@@ -58,7 +60,7 @@ Height:             35,
 InfoWidth:          28,
 MsgHeight:          6,
 CurrentScreen:      ScreenMainMenu,
-SettingsMapSize:    game.MapSizeMedium,
+SettingsMapSize:    worldmap.MapSizeMedium,
 SettingsNumAICivs:  1,
 SettingsDifficulty: 1,
 }
@@ -121,7 +123,7 @@ func (m *Model) gameMapSize() (int, int) {
 if m.Game != nil {
 return m.Game.Map.Width, m.Game.Map.Height
 }
-return game.MapWidth, game.MapHeight
+return worldmap.MapWidth, worldmap.MapHeight
 }
 
 func (m *Model) mapViewSize() (int, int) {

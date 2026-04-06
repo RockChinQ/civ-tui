@@ -1,4 +1,4 @@
-package game
+package worldmap
 
 func hash2(x, y int, seed int64) float64 {
 	h := int64(x)*1000003 ^ int64(y)*999983 ^ seed

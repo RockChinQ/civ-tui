@@ -2,7 +2,10 @@ package tui
 
 import (
 "strconv"
-	"github.com/RockChinQ/civ-tui/game"
+
+"github.com/RockChinQ/civ-tui/game"
+"github.com/RockChinQ/civ-tui/game/model"
+"github.com/RockChinQ/civ-tui/game/worldmap"
 tea "github.com/charmbracelet/bubbletea"
 )
 
@@ -181,7 +184,7 @@ m.SettingsCursor++
 case "left", "h":
 switch m.SettingsCursor {
 case 0:
-if m.SettingsMapSize > game.MapSizeSmall {
+if m.SettingsMapSize > worldmap.MapSizeSmall {
 m.SettingsMapSize--
 }
 case 1:
@@ -196,7 +199,7 @@ m.SettingsDifficulty--
 case "right", "l":
 switch m.SettingsCursor {
 case 0:
-if m.SettingsMapSize < game.MapSizeLarge {
+if m.SettingsMapSize < worldmap.MapSizeLarge {
 m.SettingsMapSize++
 }
 case 1:
@@ -303,7 +306,7 @@ return m
 }
 
 func (m Model) foundCity() (tea.Model, tea.Cmd) {
-if m.SelectedUnit == nil || m.SelectedUnit.Type != game.UnitSettler {
+if m.SelectedUnit == nil || m.SelectedUnit.Type != model.UnitSettler {
 return m, nil
 }
 msg, ok := m.Game.FoundCity(m.SelectedUnit, nil)
@@ -342,7 +345,7 @@ func (m Model) enterRangeMode() (tea.Model, tea.Cmd) {
 if m.SelectedUnit == nil || !m.SelectedUnit.IsAlive() {
 return m, nil
 }
-stats := game.UnitDefs[m.SelectedUnit.Type]
+stats := model.UnitDefs[m.SelectedUnit.Type]
 if stats.Range <= 0 {
 m.Game.AddMessage("This unit cannot perform ranged attacks")
 return m, nil
@@ -371,8 +374,8 @@ m.moveCursor(1, 0)
 m.scrollViewportToCursor()
 case "enter":
 if m.SelectedUnit != nil && m.SelectedUnit.IsAlive() {
-stats := game.UnitDefs[m.SelectedUnit.Type]
-dist := game.AbsDist(m.SelectedUnit.X, m.SelectedUnit.Y, m.CursorX, m.CursorY)
+stats := model.UnitDefs[m.SelectedUnit.Type]
+dist := worldmap.AbsDist(m.SelectedUnit.X, m.SelectedUnit.Y, m.CursorX, m.CursorY)
 if dist > stats.Range {
 m.Game.AddMessage("Target out of range")
 } else {
@@ -418,7 +421,7 @@ target := civs[m.MenuCursor]
 player := m.Game.GetCiv(1)
 if player != nil {
 rel := m.Game.GetRelation(1, target.ID)
-if rel == game.RelationWar {
+if rel == model.RelationWar {
 m.Game.MakePeace(player, target)
 m.Game.AddMessage("Made peace with " + target.Name)
 } else {
@@ -432,8 +435,8 @@ m.ActiveMenu = MenuNone
 return m, nil
 }
 
-func (m Model) diplomacyCivs() []*game.Civ {
-var civs []*game.Civ
+func (m Model) diplomacyCivs() []*model.Civ {
+var civs []*model.Civ
 for _, c := range m.Game.Civs {
 if !c.IsPlayer && c.IsAlive {
 civs = append(civs, c)
@@ -459,7 +462,7 @@ case "enter":
 if m.PendingPromotion != nil {
 m.PendingPromotion.Attack++
 m.PendingPromotion.XP -= 5
-m.Game.AddMessage(game.UnitDefs[m.PendingPromotion.Type].Name + " promoted!")
+m.Game.AddMessage(model.UnitDefs[m.PendingPromotion.Type].Name + " promoted!")
 m.PendingPromotion = nil
 }
 m.ActiveMenu = MenuNone
@@ -481,7 +484,7 @@ return m, nil
 }
 
 func (m Model) startImprovement() (tea.Model, tea.Cmd) {
-if m.SelectedUnit == nil || m.SelectedUnit.Type != game.UnitWorker {
+if m.SelectedUnit == nil || m.SelectedUnit.Type != model.UnitWorker {
 return m, nil
 }
 u := m.SelectedUnit
@@ -490,18 +493,18 @@ if tile == nil {
 return m, nil
 }
 // Pick best improvement for terrain
-var imp game.ImprovementType
+var imp model.ImprovementType
 switch tile.Terrain {
-case game.TerrainGrassland, game.TerrainPlains:
-imp = game.ImprovementFarm
-case game.TerrainHills, game.TerrainMountains:
-imp = game.ImprovementMine
-case game.TerrainForest:
-imp = game.ImprovementLumberMill
+case model.TerrainGrassland, model.TerrainPlains:
+imp = model.ImprovementFarm
+case model.TerrainHills, model.TerrainMountains:
+imp = model.ImprovementMine
+case model.TerrainForest:
+imp = model.ImprovementLumberMill
 default:
-imp = game.ImprovementRoad
+imp = model.ImprovementRoad
 }
-impDef := game.Improvements[imp]
+impDef := model.Improvements[imp]
 // Check tech requirement
 playerCiv := m.Game.GetCiv(1)
 if impDef.RequiresTech != "" && (playerCiv == nil || !playerCiv.Techs[impDef.RequiresTech]) {
@@ -546,11 +549,11 @@ m.ActiveMenu = MenuNone
 return m, nil
 }
 
-func buildMenuItems(city *game.City, civTechs map[string]bool) []game.ProductionItem {
-var items []game.ProductionItem
-for _, ut := range game.AvailableUnits(civTechs) {
-stats := game.UnitDefs[ut]
-items = append(items, game.ProductionItem{
+func buildMenuItems(city *model.City, civTechs map[string]bool) []model.ProductionItem {
+var items []model.ProductionItem
+for _, ut := range model.AvailableUnits(civTechs) {
+stats := model.UnitDefs[ut]
+items = append(items, model.ProductionItem{
 IsUnit:   true,
 UnitType: ut,
 Name:     stats.Name,
@@ -558,10 +561,10 @@ Cost:     stats.ProductionCost,
 })
 }
 if city != nil {
-for _, bt := range game.AvailableBuildings(civTechs) {
+for _, bt := range model.AvailableBuildings(civTechs) {
 if !city.Buildings[bt] {
-bdef := game.BuildingDefs[bt]
-items = append(items, game.ProductionItem{
+bdef := model.BuildingDefs[bt]
+items = append(items, model.ProductionItem{
 IsUnit:       false,
 BuildingType: bt,
 Name:         bdef.Name,
@@ -579,7 +582,7 @@ if playerCiv == nil {
 m.ActiveMenu = MenuNone
 return m, nil
 }
-available := game.AvailableTechs(playerCiv.Techs)
+available := model.AvailableTechs(playerCiv.Techs)
 
 switch msg.String() {
 case "esc", "t", "T":

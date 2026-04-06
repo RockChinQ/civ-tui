@@ -6,6 +6,8 @@ import (
 "strings"
 
 "github.com/RockChinQ/civ-tui/game"
+"github.com/RockChinQ/civ-tui/game/model"
+"github.com/RockChinQ/civ-tui/game/worldmap"
 "github.com/charmbracelet/lipgloss"
 )
 
@@ -113,7 +115,7 @@ sci := playerCiv.Science
 goldPT := 0
 for _, c := range m.Game.Cities {
 if c.CivID == 1 {
-goldPT += c.GoldYield(m.Game.Map)
+goldPT += c.GoldYield(m.Game.Map.GetTile(c.X, c.Y))
 }
 }
 text := fmt.Sprintf("Turn: %d  Gold: %d (+%d)  Sci: %d  %s",
@@ -155,8 +157,8 @@ isCursor := x == m.CursorX && y == m.CursorY
 // Highlight range targets
 isInRange := false
 if m.RangeMode && m.SelectedUnit != nil {
-stats := game.UnitDefs[m.SelectedUnit.Type]
-dist := game.AbsDist(m.SelectedUnit.X, m.SelectedUnit.Y, x, y)
+stats := model.UnitDefs[m.SelectedUnit.Type]
+dist := worldmap.AbsDist(m.SelectedUnit.X, m.SelectedUnit.Y, x, y)
 if dist <= stats.Range && dist > 0 {
 isInRange = true
 }
@@ -183,7 +185,7 @@ style = StyleEnemyCity
 } else {
 unit := m.Game.GetUnitAt(x, y)
 if unit != nil && (tile.Visible || unit.CivID == 1) {
-ch = game.UnitDefs[unit.Type].Symbol
+ch = model.UnitDefs[unit.Type].Symbol
 if unit.CivID == 1 {
 if m.SelectedUnit != nil && m.SelectedUnit.ID == unit.ID {
 style = StyleSelectedUnit
@@ -194,10 +196,10 @@ style = StylePlayerUnit
 style = StyleEnemyUnit
 }
 } else {
-terrain := game.Terrains[tile.Terrain]
+terrain := model.Terrains[tile.Terrain]
 // Show improvement symbol if present
-if tile.Improvement != game.ImprovementNone && tile.Visible {
-imp := game.Improvements[tile.Improvement]
+if tile.Improvement != model.ImprovementNone && tile.Visible {
+imp := model.Improvements[tile.Improvement]
 ch = imp.Symbol
 } else {
 ch = terrain.Symbol
@@ -218,25 +220,25 @@ rendered = StyleRangeHighlight.Render(ch + " ")
 return rendered
 }
 
-func terrainStyle(t game.TerrainType) lipgloss.Style {
+func terrainStyle(t model.TerrainType) lipgloss.Style {
 switch t {
-case game.TerrainOcean:
+case model.TerrainOcean:
 return StyleOcean
-case game.TerrainCoast:
+case model.TerrainCoast:
 return StyleCoast
-case game.TerrainGrassland:
+case model.TerrainGrassland:
 return StyleGrassland
-case game.TerrainPlains:
+case model.TerrainPlains:
 return StylePlains
-case game.TerrainHills:
+case model.TerrainHills:
 return StyleHills
-case game.TerrainMountains:
+case model.TerrainMountains:
 return StyleMountains
-case game.TerrainForest:
+case model.TerrainForest:
 return StyleForest
-case game.TerrainDesert:
+case model.TerrainDesert:
 return StyleDesert
-case game.TerrainTundra:
+case model.TerrainTundra:
 return StyleTundra
 }
 return StyleBase
@@ -249,14 +251,14 @@ w := m.InfoWidth - 4
 sb.WriteString(StyleSectionTitle.Render("SELECTED UNIT") + "\n")
 if m.SelectedUnit != nil && m.SelectedUnit.IsAlive() {
 u := m.SelectedUnit
-stats := game.UnitDefs[u.Type]
+stats := model.UnitDefs[u.Type]
 sb.WriteString(fmt.Sprintf("%s (HP %d/%d)\n", stats.Name, u.HP, u.MaxHP))
 sb.WriteString(fmt.Sprintf("Move: %d/%d  XP: %d  Lv: %d\n", u.MovesLeft, u.MaxMoves, u.XP, u.Level))
 sb.WriteString(fmt.Sprintf("Atk: %d  Def: %d\n", u.Attack, u.Defense))
 sb.WriteString(fmt.Sprintf("Pos: (%d, %d)\n", u.X, u.Y))
 tile := m.Game.Map.GetTile(u.X, u.Y)
 if tile != nil {
-t := game.Terrains[tile.Terrain]
+t := model.Terrains[tile.Terrain]
 sb.WriteString(fmt.Sprintf("Terrain: %s\n", t.Name))
 if t.DefenseBonus > 0 {
 sb.WriteString(fmt.Sprintf("Defense bonus: +%d%%\n", t.DefenseBonus))
@@ -266,7 +268,7 @@ sb.WriteString(fmt.Sprintf("Defense bonus: +%d%%\n", t.DefenseBonus))
 tile := m.Game.Map.GetTile(m.CursorX, m.CursorY)
 sb.WriteString(fmt.Sprintf("Cursor: (%d, %d)\n", m.CursorX, m.CursorY))
 if tile != nil && tile.Revealed {
-t := game.Terrains[tile.Terrain]
+t := model.Terrains[tile.Terrain]
 sb.WriteString(fmt.Sprintf("Terrain: %s\n", t.Name))
 sb.WriteString(fmt.Sprintf("Yields: F%d P%d G%d\n", t.Food, t.Production, t.Gold))
 } else {
@@ -283,12 +285,12 @@ sb.WriteString(StyleDim.Render(strings.Repeat("─", w)) + "\n")
 sb.WriteString(StyleSectionTitle.Render("ACTIONS") + "\n")
 if m.SelectedUnit != nil {
 switch m.SelectedUnit.Type {
-case game.UnitSettler:
+case model.UnitSettler:
 sb.WriteString("[F] Found City\n")
-case game.UnitWorker:
+case model.UnitWorker:
 sb.WriteString("[I] Build Improvement\n")
 default:
-if game.UnitDefs[m.SelectedUnit.Type].Range > 0 {
+if model.UnitDefs[m.SelectedUnit.Type].Range > 0 {
 sb.WriteString("[R] Ranged Attack\n")
 }
 }
@@ -307,7 +309,7 @@ sb.WriteString(StyleSectionTitle.Render("RESEARCH") + "\n")
 playerCiv := m.Game.GetCiv(1)
 if playerCiv != nil {
 if playerCiv.Researching != "" {
-tech := game.GetTech(playerCiv.Researching)
+tech := model.GetTech(playerCiv.Researching)
 sb.WriteString(fmt.Sprintf("Researching: %s\n", playerCiv.Researching))
 if tech != nil {
 sb.WriteString(fmt.Sprintf("Progress: %d/%d\n", playerCiv.ResearchProgress, tech.Cost))
@@ -316,12 +318,12 @@ sb.WriteString(fmt.Sprintf("Progress: %d/%d\n", playerCiv.ResearchProgress, tech
 sb.WriteString(StyleYellow.Render("Press [T] to research\n"))
 }
 done := 0
-for _, t := range game.AllTechs {
+for _, t := range model.AllTechs {
 if playerCiv.Techs[t.Name] {
 done++
 }
 }
-sb.WriteString(fmt.Sprintf("Techs: %d/%d\n", done, len(game.AllTechs)))
+sb.WriteString(fmt.Sprintf("Techs: %d/%d\n", done, len(model.AllTechs)))
 }
 
 sb.WriteString(StyleDim.Render(strings.Repeat("─", w)) + "\n")
@@ -377,7 +379,7 @@ sb.WriteString(StylePlayerCity.Render("*"))
 } else if hasEnemyCity {
 sb.WriteString(StyleEnemyCity.Render("*"))
 } else {
-terrain := game.Terrains[tile.Terrain]
+terrain := model.Terrains[tile.Terrain]
 style := terrainStyle(tile.Terrain)
 if !tile.Visible {
 style = style.Faint(true)
@@ -442,7 +444,7 @@ sb.WriteString(StyleDim.Render("[Enter]=select  [Esc]=cancel"))
 case MenuTech:
 sb.WriteString(StyleSectionTitle.Render("TECH MENU") + "\n")
 if playerCiv != nil {
-available := game.AvailableTechs(playerCiv.Techs)
+available := model.AvailableTechs(playerCiv.Techs)
 if len(available) == 0 {
 sb.WriteString("No techs available\n")
 }
@@ -464,12 +466,12 @@ return StyleInfoPanel.Width(50).Render(sb.String())
 
 func techUnlocks(techName string) string {
 var unlocks []string
-for _, ud := range game.UnitDefs {
+for _, ud := range model.UnitDefs {
 if ud.RequiresTech == techName {
 unlocks = append(unlocks, ud.Name)
 }
 }
-for _, bd := range game.BuildingDefs {
+for _, bd := range model.BuildingDefs {
 if bd.RequiresTech == techName {
 unlocks = append(unlocks, bd.Name)
 }
@@ -480,7 +482,7 @@ return ""
 return " → " + strings.Join(unlocks, ", ")
 }
 
-func (m Model) renderCityDetails(city *game.City) string {
+func (m Model) renderCityDetails(city *model.City) string {
 if city == nil {
 return ""
 }
@@ -489,17 +491,18 @@ sb.WriteString(StyleSectionTitle.Render("CITY: "+city.Name) + "\n\n")
 sb.WriteString(fmt.Sprintf("Population: %d  HP: %d/%d\n", city.Population, city.HP, city.MaxHP))
 sb.WriteString(fmt.Sprintf("Food: %d/%d  Production: %d\n",
 city.Food, city.FoodNeeded, city.Production))
+tile := m.Game.Map.GetTile(city.X, city.Y)
 sb.WriteString(fmt.Sprintf("Yields: Food %d  Prod %d  Gold %d  Sci %d\n",
-city.FoodYield(m.Game.Map),
-city.ProductionYield(m.Game.Map),
-city.GoldYield(m.Game.Map),
+city.FoodYield(tile),
+city.ProductionYield(tile),
+city.GoldYield(tile),
 city.ScienceYield()))
 sb.WriteString("\nBuildings:\n")
 if len(city.Buildings) == 0 {
 sb.WriteString("  (none)\n")
 }
 for bt := range city.Buildings {
-sb.WriteString("  " + game.BuildingDefs[bt].Name + "\n")
+sb.WriteString("  " + model.BuildingDefs[bt].Name + "\n")
 }
 sb.WriteString("\nProduction Queue:\n")
 if len(city.ProductionQ) == 0 {
@@ -527,13 +530,13 @@ for i, c := range civs {
 rel := m.Game.GetRelation(1, c.ID)
 relStr := "Peace"
 relStyle := StyleGreen
-if rel == game.RelationWar {
+if rel == model.RelationWar {
 relStr = "War"
 relStyle = StyleRed
 }
 line := fmt.Sprintf("%s: %s", c.Name, relStr)
 action := " [Enter=declare war]"
-if rel == game.RelationWar {
+if rel == model.RelationWar {
 action = " [Enter=make peace]"
 }
 if i == m.MenuCursor {
@@ -603,5 +606,3 @@ msg = StyleYellow.Render("DRAW - Turn limit reached! Press Q to quit.")
 }
 return StyleBold.Render(msg)
 }
-
-

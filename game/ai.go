@@ -1,5 +1,13 @@
 package game
 
+import (
+	"github.com/RockChinQ/civ-tui/game/model"
+)
+
+// aiMinSettlerCityDistance is the minimum distance an AI settler requires
+// from any existing city before it will attempt to found a new one.
+const aiMinSettlerCityDistance = 4
+
 func (g *Game) RunAI() []string {
 var msgs []string
 for _, civ := range g.Civs {
@@ -11,16 +19,16 @@ msgs = append(msgs, g.runCivAI(civ)...)
 return msgs
 }
 
-func (g *Game) runCivAI(civ *Civ) []string {
+func (g *Game) runCivAI(civ *model.Civ) []string {
 var msgs []string
 
 // AI research: prefer techs that unlock units
 if civ.Researching == "" {
-available := AvailableTechs(civ.Techs)
+available := model.AvailableTechs(civ.Techs)
 if len(available) > 0 {
 chosen := available[0]
 for _, t := range available {
-for _, ud := range UnitDefs {
+for _, ud := range model.UnitDefs {
 if ud.RequiresTech == t.Name {
 chosen = t
 break
@@ -41,7 +49,7 @@ continue
 for u.HasMoves() {
 var acted bool
 switch u.Type {
-case UnitSettler:
+case model.UnitSettler:
 acted = g.aiSettlerAction(civ, u, &msgs)
 default:
 acted = g.aiMilitaryAction(civ, u, &msgs)
@@ -57,16 +65,16 @@ if city.CivID != civ.ID {
 continue
 }
 if len(city.ProductionQ) == 0 {
-unitTypes := AvailableUnits(civ.Techs)
+unitTypes := model.AvailableUnits(civ.Techs)
 // Remove settler and worker from AI production choices
-var militaryTypes []UnitType
+var militaryTypes []model.UnitType
 for _, ut := range unitTypes {
-if ut != UnitSettler && ut != UnitWorker {
+if ut != model.UnitSettler && ut != model.UnitWorker {
 militaryTypes = append(militaryTypes, ut)
 }
 }
 if len(militaryTypes) == 0 {
-militaryTypes = []UnitType{UnitWarrior}
+militaryTypes = []model.UnitType{model.UnitWarrior}
 }
 unitCount := 0
 for _, u := range g.Units {
@@ -82,8 +90,8 @@ idx = len(militaryTypes) - 1
 idx = len(militaryTypes) / 2
 }
 unitType := militaryTypes[idx]
-stats := UnitDefs[unitType]
-city.ProductionQ = append(city.ProductionQ, ProductionItem{
+stats := model.UnitDefs[unitType]
+city.ProductionQ = append(city.ProductionQ, model.ProductionItem{
 IsUnit:   true,
 UnitType: unitType,
 Name:     stats.Name,
@@ -95,7 +103,7 @@ Cost:     stats.ProductionCost,
 return msgs
 }
 
-func (g *Game) aiDiplomacy(civ *Civ) {
+func (g *Game) aiDiplomacy(civ *model.Civ) {
 myUnits := 0
 for _, u := range g.Units {
 if u.CivID == civ.ID && u.IsAlive() {
@@ -108,7 +116,7 @@ if other.ID == civ.ID || !other.IsAlive {
 continue
 }
 relation := civ.Relations[other.ID]
-if relation == RelationWar {
+if relation == model.RelationWar {
 enemyUnits := 0
 for _, u := range g.Units {
 if u.CivID == other.ID && u.IsAlive() {
@@ -134,16 +142,16 @@ g.DeclareWar(civ, other)
 }
 }
 
-func (g *Game) aiSettlerAction(civ *Civ, u *Unit, msgs *[]string) bool {
+func (g *Game) aiSettlerAction(civ *model.Civ, u *model.Unit, msgs *[]string) bool {
 tooClose := false
 for _, c := range g.Cities {
-if abs(c.X-u.X)+abs(c.Y-u.Y) < 4 {
+if abs(c.X-u.X)+abs(c.Y-u.Y) < aiMinSettlerCityDistance {
 tooClose = true
 break
 }
 }
 t := g.Map.GetTile(u.X, u.Y)
-if !tooClose && t != nil && Terrains[t.Terrain].Passable {
+if !tooClose && t != nil && model.Terrains[t.Terrain].Passable {
 msg, ok := g.FoundCity(u, nil)
 if ok {
 *msgs = append(*msgs, msg)
@@ -153,7 +161,7 @@ return false
 return g.aiMoveRandom(u)
 }
 
-func (g *Game) aiMilitaryAction(civ *Civ, u *Unit, msgs *[]string) bool {
+func (g *Game) aiMilitaryAction(civ *model.Civ, u *model.Unit, msgs *[]string) bool {
 bestDist := 999
 bestX, bestY := -1, -1
 
@@ -161,7 +169,7 @@ for _, pu := range g.Units {
 if pu.CivID == civ.ID || !pu.IsAlive() {
 continue
 }
-if g.GetRelation(civ.ID, pu.CivID) != RelationWar {
+if g.GetRelation(civ.ID, pu.CivID) != model.RelationWar {
 continue
 }
 d := abs(pu.X-u.X) + abs(pu.Y-u.Y)
@@ -171,7 +179,7 @@ bestX, bestY = pu.X, pu.Y
 }
 }
 for _, pc := range g.Cities {
-if g.GetRelation(civ.ID, pc.CivID) != RelationWar {
+if g.GetRelation(civ.ID, pc.CivID) != model.RelationWar {
 continue
 }
 d := abs(pc.X-u.X) + abs(pc.Y-u.Y)
@@ -218,7 +226,7 @@ return true
 return false
 }
 
-func (g *Game) aiMoveRandom(u *Unit) bool {
+func (g *Game) aiMoveRandom(u *model.Unit) bool {
 dirs := [][2]int{{0, -1}, {0, 1}, {-1, 0}, {1, 0}}
 g.Rand.Shuffle(len(dirs), func(i, j int) { dirs[i], dirs[j] = dirs[j], dirs[i] })
 for _, d := range dirs {
