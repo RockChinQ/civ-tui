@@ -52,3 +52,7 @@ var (
 	StyleRed          = lipgloss.NewStyle().Foreground(lipgloss.Color("196"))
 	StyleYellow       = lipgloss.NewStyle().Foreground(lipgloss.Color("226"))
 )
+
+var (
+StyleRangeHighlight = lipgloss.NewStyle().Background(lipgloss.Color("52")).Foreground(lipgloss.Color("255"))
+)

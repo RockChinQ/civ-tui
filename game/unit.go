@@ -10,6 +10,7 @@ const (
 	UnitSpearman
 	UnitSwordsman
 	UnitHorseman
+	UnitWorker
 )
 
 type UnitStats struct {
@@ -21,30 +22,37 @@ type UnitStats struct {
 	Defense        int
 	MaxMoves       int
 	ProductionCost int
+	RequiresTech   string
+	Range          int
 }
 
 var UnitDefs = map[UnitType]UnitStats{
-	UnitSettler:   {UnitSettler, "Settler", "S", 10, 0, 1, 2, 30},
-	UnitScout:     {UnitScout, "Scout", "C", 10, 2, 1, 3, 15},
-	UnitWarrior:   {UnitWarrior, "Warrior", "W", 15, 4, 2, 2, 20},
-	UnitArcher:    {UnitArcher, "Archer", "A", 12, 5, 1, 2, 25},
-	UnitSpearman:  {UnitSpearman, "Spearman", "P", 18, 3, 4, 2, 30},
-	UnitSwordsman: {UnitSwordsman, "Swordsman", "X", 20, 7, 3, 2, 40},
-	UnitHorseman:  {UnitHorseman, "Horseman", "H", 15, 6, 2, 4, 35},
+	UnitSettler:   {UnitSettler, "Settler", "S", 10, 0, 1, 2, 30, "", 0},
+	UnitScout:     {UnitScout, "Scout", "C", 10, 2, 1, 3, 15, "", 0},
+	UnitWarrior:   {UnitWarrior, "Warrior", "W", 15, 4, 2, 2, 20, "", 0},
+	UnitArcher:    {UnitArcher, "Archer", "A", 12, 5, 1, 2, 25, "Archery", 2},
+	UnitSpearman:  {UnitSpearman, "Spearman", "P", 18, 3, 4, 2, 30, "Bronze Working", 0},
+	UnitSwordsman: {UnitSwordsman, "Swordsman", "X", 20, 7, 3, 2, 40, "Iron Working", 0},
+	UnitHorseman:  {UnitHorseman, "Horseman", "H", 15, 6, 2, 4, 35, "Horseback Riding", 0},
+	UnitWorker:    {UnitWorker, "Worker", "K", 10, 0, 1, 2, 20, "", 0},
 }
 
 type Unit struct {
-	ID        int
-	Type      UnitType
-	CivID     int
-	X, Y      int
-	HP        int
-	MaxHP     int
-	Attack    int
-	Defense   int
-	MovesLeft int
-	MaxMoves  int
-	Waiting   bool
+	ID                   int
+	Type                 UnitType
+	CivID                int
+	X, Y                 int
+	HP                   int
+	MaxHP                int
+	Attack               int
+	Defense              int
+	MovesLeft            int
+	MaxMoves             int
+	Waiting              bool
+	XP                   int
+	Level                int
+	BuildingImprovement  ImprovementType
+	ImprovementTurnsLeft int
 }
 
 func NewUnit(id int, utype UnitType, civID, x, y int) *Unit {
@@ -75,4 +83,16 @@ func (u *Unit) HasMoves() bool {
 func (u *Unit) ResetMoves() {
 	u.MovesLeft = u.MaxMoves
 	u.Waiting = false
+}
+
+func AvailableUnits(civTechs map[string]bool) []UnitType {
+	var result []UnitType
+	order := []UnitType{UnitSettler, UnitWorker, UnitScout, UnitWarrior, UnitArcher, UnitSpearman, UnitSwordsman, UnitHorseman}
+	for _, ut := range order {
+		udef := UnitDefs[ut]
+		if udef.RequiresTech == "" || civTechs[udef.RequiresTech] {
+			result = append(result, ut)
+		}
+	}
+	return result
 }
