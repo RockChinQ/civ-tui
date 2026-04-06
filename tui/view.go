@@ -85,7 +85,7 @@ mapSizeStr := mapSizes[int(m.SettingsMapSize)]
 items := []string{
 "Map Size: " + mapSizeStr,
 "AI Civs:  " + strconv.Itoa(m.SettingsNumAICivs),
-"Difficulty: " + strconv.Itoa(m.SettingsDifficulty),
+"Difficulty: " + []string{"Easy", "Normal", "Hard"}[m.SettingsDifficulty-1],
 "Back",
 }
 
