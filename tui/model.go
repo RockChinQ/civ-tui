@@ -53,6 +53,7 @@ type Model struct {
 	SettingsNumAICivs  int
 	SettingsDifficulty int
 	RangeMode          bool
+	DestMode           bool // true when player is selecting a movement destination
 	PendingPromotion   *model.Unit
 	ReachableTiles     map[[2]int]bool // cached reachable tiles for selected unit
 }

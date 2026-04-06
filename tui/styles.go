@@ -56,6 +56,12 @@ var (
 var (
 	StyleRangeHighlight = lipgloss.NewStyle().Background(lipgloss.Color("52")).Foreground(lipgloss.Color("255"))
 	StyleMoveHighlight  = lipgloss.NewStyle().Background(lipgloss.Color("22")).Foreground(lipgloss.Color("255"))
+	// StyleBusyUnit: warm orange background – unit is performing a multi-turn task
+	StyleBusyUnit = lipgloss.NewStyle().Background(lipgloss.Color("130")).Foreground(lipgloss.Color("255")).Bold(true)
+	// StyleMovingUnit: teal background – unit is auto-moving toward a destination
+	StyleMovingUnit = lipgloss.NewStyle().Background(lipgloss.Color("23")).Foreground(lipgloss.Color("255")).Bold(true)
+	// StyleDestMarker: purple background – marks the current unit's movement destination
+	StyleDestMarker = lipgloss.NewStyle().Background(lipgloss.Color("90")).Foreground(lipgloss.Color("255"))
 )
 
 var StylePopup = lipgloss.NewStyle().

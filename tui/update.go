@@ -46,6 +46,11 @@ func (m Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m, nil
 	}
 
+	// Destination (goto) mode
+	if m.DestMode {
+		return m.handleDestMode(msg)
+	}
+
 	// Range mode
 	if m.RangeMode {
 		return m.handleRangedMode(msg)
@@ -82,6 +87,7 @@ func (m Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.ReachableTiles = nil
 		m.ActiveMenu = MenuNone
 		m.RangeMode = false
+		m.DestMode = false
 		return m, nil
 	case "up", "k":
 		return m.moveCursorOrUnit(0, -1)
@@ -103,6 +109,10 @@ func (m Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m.openTechMenu()
 	case "r", "R":
 		return m.enterRangeMode()
+	case "g", "G":
+		return m.enterDestMode()
+	case "x", "X":
+		return m.cancelDestination()
 	case "d", "D":
 		return m.openDiplomacyMenu()
 	case "s", "S":
@@ -360,7 +370,7 @@ func (m *Model) scrollViewportToCursor() {
 }
 
 func (m Model) selectNextUnit() Model {
-	units := m.Game.PlayerUnitsWithMoves()
+	units := m.Game.PlayerUnitsNeedingAttention()
 	if len(units) == 0 {
 		m.ReachableTiles = nil
 		return m
@@ -383,10 +393,10 @@ func (m Model) selectNextUnit() Model {
 	return m
 }
 
-// selectNextFocus cycles through units with moves AND player cities.
+// selectNextFocus cycles through units needing attention AND player cities.
 // Used by the N key to let the player review all their assets.
 func (m Model) selectNextFocus() Model {
-	units := m.Game.PlayerUnitsWithMoves()
+	units := m.Game.PlayerUnitsNeedingAttention()
 	var cities []*model.City
 	for _, c := range m.Game.Cities {
 		if c.CivID == 1 {
@@ -437,4 +447,66 @@ func (m Model) selectNextFocus() Model {
 	m.updateReachable()
 	m.scrollViewportToCursor()
 	return m
+}
+
+// handleDestMode processes key events while the player is choosing a movement
+// destination for the selected unit.
+func (m Model) handleDestMode(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	switch msg.String() {
+	case "esc", "g", "G":
+		m.DestMode = false
+		return m, nil
+	case "up", "k":
+		m.moveCursor(0, -1)
+		m.scrollViewportToCursor()
+	case "down", "j":
+		m.moveCursor(0, 1)
+		m.scrollViewportToCursor()
+	case "left", "h":
+		m.moveCursor(-1, 0)
+		m.scrollViewportToCursor()
+	case "right", "l":
+		m.moveCursor(1, 0)
+		m.scrollViewportToCursor()
+	case "enter":
+		if m.SelectedUnit != nil {
+			tile := m.Game.Map.GetTile(m.CursorX, m.CursorY)
+			if tile != nil && model.Terrains[tile.Terrain].Passable {
+				// Same tile as unit – treat as cancel
+				if m.CursorX == m.SelectedUnit.X && m.CursorY == m.SelectedUnit.Y {
+					m.SelectedUnit.HasDest = false
+				} else {
+					m.SelectedUnit.HasDest = true
+					m.SelectedUnit.DestX = m.CursorX
+					m.SelectedUnit.DestY = m.CursorY
+					m.Game.AddMessage(i18n.Tf("Set destination to (%d,%d)", m.CursorX, m.CursorY))
+				}
+			} else {
+				m.Game.AddMessage(i18n.T("Cannot set destination on impassable terrain"))
+			}
+		}
+		m.DestMode = false
+		return m, nil
+	}
+	return m, nil
+}
+
+// enterDestMode activates destination-selection mode for the selected unit.
+func (m Model) enterDestMode() (tea.Model, tea.Cmd) {
+	if m.SelectedUnit == nil || !m.SelectedUnit.IsAlive() {
+		return m, nil
+	}
+	m.DestMode = true
+	m.Game.AddMessage(i18n.T("Goto mode: move cursor to destination, Enter to confirm, Esc to cancel"))
+	return m, nil
+}
+
+// cancelDestination clears the movement destination of the selected unit.
+func (m Model) cancelDestination() (tea.Model, tea.Cmd) {
+	if m.SelectedUnit != nil && m.SelectedUnit.HasDest {
+		m.SelectedUnit.HasDest = false
+		m.Game.AddMessage(i18n.T("Destination cancelled"))
+		m.updateReachable()
+	}
+	return m, nil
 }

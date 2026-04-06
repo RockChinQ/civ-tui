@@ -113,6 +113,61 @@ func (g *Game) EndTurn() []string {
 		}
 	}
 
+	// Re-apply the waiting flag for units that are still performing a multi-turn
+	// task (e.g. workers building improvements). ResetMoves clears Waiting, but
+	// busy units must not be manually movable or auto-moved until the task ends.
+	for _, u := range g.Units {
+		if u.IsAlive() && u.IsBusy() {
+			u.Waiting = true
+		}
+	}
+
+	// Auto-movement: advance player units that have a movement destination set.
+	// Each unit uses its fresh movement points to travel as far as possible along
+	// the shortest path toward the destination this turn.
+	for _, u := range g.Units {
+		if !u.IsAlive() || u.CivID != 1 || !u.HasDest {
+			continue
+		}
+		if u.IsBusy() {
+			continue // task in progress – movement deferred
+		}
+		if u.X == u.DestX && u.Y == u.DestY {
+			u.HasDest = false
+			continue
+		}
+		path := g.FindPath(u, u.DestX, u.DestY)
+		if len(path) == 0 {
+			u.HasDest = false
+			msgs = append(msgs, i18n.Tf("Unit %s cannot reach destination", i18n.T(model.UnitDefs[u.Type].Name)))
+			continue
+		}
+		for i := 0; i < len(path) && u.MovesLeft > 0; i++ {
+			next := path[i]
+			prevX, prevY := u.X, u.Y
+			moveMsg, ok := g.MoveUnit(u, next[0]-prevX, next[1]-prevY)
+			if !ok {
+				u.HasDest = false
+				break
+			}
+			if moveMsg != "" {
+				msgs = append(msgs, moveMsg)
+			}
+			// Combat may have fired but the unit did not physically advance
+			// (e.g. both units survived). Cancel the destination so the unit
+			// does not attack indefinitely.
+			if u.X == prevX && u.Y == prevY {
+				u.HasDest = false
+				break
+			}
+			if u.X == u.DestX && u.Y == u.DestY {
+				u.HasDest = false
+				msgs = append(msgs, i18n.Tf("Unit %s arrived at (%d,%d)", i18n.T(model.UnitDefs[u.Type].Name), u.DestX, u.DestY))
+				break
+			}
+		}
+	}
+
 	aiMsgs := g.RunAI()
 	msgs = append(msgs, aiMsgs...)
 

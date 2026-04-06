@@ -322,3 +322,148 @@ func TestReachableTiles(t *testing.T) {
 		}
 	}
 }
+
+func TestFindPath(t *testing.T) {
+g := NewGame(defaultOpts())
+
+var warrior *model.Unit
+for _, u := range g.Units {
+if u.CivID == 1 && u.Type == model.UnitWarrior {
+warrior = u
+break
+}
+}
+if warrior == nil {
+t.Skip("No warrior found")
+}
+
+// Find a passable tile that is not the warrior's current position
+destX, destY := -1, -1
+for y := 0; y < g.Map.Height && destX == -1; y++ {
+for x := 0; x < g.Map.Width && destX == -1; x++ {
+if (x != warrior.X || y != warrior.Y) && model.Terrains[g.Map.Tiles[y][x].Terrain].Passable {
+destX, destY = x, y
+}
+}
+}
+if destX == -1 {
+t.Skip("No passable destination found")
+}
+
+path := g.FindPath(warrior, destX, destY)
+if path == nil {
+t.Skip("No path found to destination (map may be isolated)")
+}
+
+// Path should end at the destination
+last := path[len(path)-1]
+if last[0] != destX || last[1] != destY {
+t.Errorf("Path last step should be (%d,%d), got (%d,%d)", destX, destY, last[0], last[1])
+}
+
+// Each step in path should be passable and adjacent to the previous step
+prev := [2]int{warrior.X, warrior.Y}
+for i, step := range path {
+tile := g.Map.GetTile(step[0], step[1])
+if tile == nil || !model.Terrains[tile.Terrain].Passable {
+t.Errorf("Path step %d at (%d,%d) is not passable", i, step[0], step[1])
+}
+dist := abs(step[0]-prev[0]) + abs(step[1]-prev[1])
+if dist != 1 {
+t.Errorf("Path step %d at (%d,%d) is not adjacent to previous (%d,%d)", i, step[0], step[1], prev[0], prev[1])
+}
+prev = step
+}
+}
+
+func TestAutoMovement(t *testing.T) {
+g := NewGame(defaultOpts())
+
+// Find a passable region for a fresh test warrior
+var px, py int
+for y := 3; y < g.Map.Height-3; y++ {
+for x := 3; x < g.Map.Width-3; x++ {
+tile := g.Map.GetTile(x, y)
+dest := g.Map.GetTile(x+3, y)
+if tile != nil && model.Terrains[tile.Terrain].Passable &&
+dest != nil && model.Terrains[dest.Terrain].Passable {
+px, py = x, y
+goto placed
+}
+}
+}
+t.Skip("No suitable passable area found")
+placed:
+
+warrior := g.AddUnit(model.UnitWarrior, 1, px, py)
+destX, destY := px+3, py
+warrior.HasDest = true
+warrior.DestX = destX
+warrior.DestY = destY
+
+origX := warrior.X
+
+g.EndTurn()
+
+// Warrior should have moved closer to destination
+if warrior.X <= origX && warrior.X != destX {
+t.Errorf("Warrior should have moved toward destination (%d,%d), still at (%d,%d)", destX, destY, warrior.X, warrior.Y)
+}
+}
+
+func TestPlayerUnitsNeedingAttention(t *testing.T) {
+g := NewGame(defaultOpts())
+
+// All freshly-created player units should initially need attention
+units := g.PlayerUnitsNeedingAttention()
+if len(units) == 0 {
+t.Fatal("Expected at least one unit needing attention at game start")
+}
+
+// Set a destination on the first unit – it should no longer need attention
+u := units[0]
+u.HasDest = true
+u.DestX = u.X + 1
+u.DestY = u.Y
+
+unitsAfter := g.PlayerUnitsNeedingAttention()
+for _, au := range unitsAfter {
+if au.ID == u.ID {
+t.Errorf("Unit with destination should not appear in PlayerUnitsNeedingAttention")
+}
+}
+}
+
+func TestBusyWorkerSkippedInAutoMove(t *testing.T) {
+g := NewGame(defaultOpts())
+
+var worker *model.Unit
+for y := 3; y < g.Map.Height-3 && worker == nil; y++ {
+for x := 3; x < g.Map.Width-3 && worker == nil; x++ {
+tile := g.Map.GetTile(x, y)
+if tile != nil && model.Terrains[tile.Terrain].Passable {
+worker = g.AddUnit(model.UnitWorker, 1, x, y)
+}
+}
+}
+if worker == nil {
+t.Skip("Could not place worker")
+}
+
+// Start building and also set a destination
+worker.BuildingImprovement = model.ImprovementFarm
+worker.ImprovementTurnsLeft = 3
+worker.Waiting = true
+worker.HasDest = true
+worker.DestX = worker.X + 2
+worker.DestY = worker.Y
+
+origX := worker.X
+
+g.EndTurn()
+
+// Worker should NOT have moved – busy workers are skipped
+if worker.X != origX {
+t.Errorf("Busy worker should not auto-move; started at x=%d, now at x=%d", origX, worker.X)
+}
+}

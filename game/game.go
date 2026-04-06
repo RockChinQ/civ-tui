@@ -300,6 +300,19 @@ func (g *Game) PlayerUnitsWithMoves() []*model.Unit {
 	return result
 }
 
+// PlayerUnitsNeedingAttention returns player units that have moves remaining,
+// are not busy (building an improvement), and have no automatic movement
+// destination set. These are the units that require manual player input.
+func (g *Game) PlayerUnitsNeedingAttention() []*model.Unit {
+	var result []*model.Unit
+	for _, u := range g.Units {
+		if u.CivID == 1 && u.IsAlive() && u.HasMoves() && !u.HasDest {
+			result = append(result, u)
+		}
+	}
+	return result
+}
+
 func (g *Game) FoundCity(u *model.Unit, cityNames []string) (string, bool) {
 	if u.Type != model.UnitSettler {
 		return i18n.T("Only Settlers can found cities"), false

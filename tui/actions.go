@@ -160,20 +160,21 @@ func (m Model) startImprovement() (tea.Model, tea.Cmd) {
 }
 
 func (m Model) endTurn() (tea.Model, tea.Cmd) {
+	m.DestMode = false
 	prev := m.SelectedUnit
 	m.Game.EndTurn()
 
-	// Keep previous unit selected if it's still alive and has moves
-	if prev != nil && prev.IsAlive() && prev.HasMoves() {
+	// Keep previous unit selected if it still needs player attention
+	if prev != nil && prev.IsAlive() && prev.HasMoves() && !prev.HasDest {
 		m.SelectedUnit = prev
 		m.updateReachable()
 		return m, nil
 	}
 
-	// Otherwise fall back to first available unit
+	// Otherwise fall back to first unit needing attention
 	m.SelectedUnit = nil
 	m.ReachableTiles = nil
-	units := m.Game.PlayerUnitsWithMoves()
+	units := m.Game.PlayerUnitsNeedingAttention()
 	if len(units) > 0 {
 		m.SelectedUnit = units[0]
 		m.CursorX = units[0].X

@@ -66,9 +66,18 @@ MOVEMENT:
 UNIT ACTIONS:
   F - Found City (Settler only)
   W - Wait/Skip unit turn
-  N - Select next unit with moves
+  N - Select next unit needing attention
   R - Ranged attack mode (Archers)
   I - Build improvement (Worker)
+  G - Set movement destination (Goto)
+      Arrow keys move cursor to target, Enter confirms, Esc cancels
+  X - Cancel unit's movement destination
+
+UNIT STATUS (background color):
+  Yellow  = selected unit
+  Orange  = busy (building improvement, skipped by N)
+  Teal    = moving to destination (skipped by N)
+  Purple  = destination marker on map
 
 CITY ACTIONS:
   B - Open build menu (when on city)
@@ -114,9 +123,18 @@ CIV-TUI 帮助
 单位操作:
   F - 建立城市（仅开拓者）
   W - 等待/跳过单位回合
-  N - 选择下一个可移动单位
+  N - 选择下一个需要关注的单位
   R - 远程攻击模式（弓箭手）
   I - 建造设施（工人）
+  G - 设置移动目的地（前往）
+      方向键移动光标选择目标，Enter 确认，Esc 取消
+  X - 取消当前单位的移动目的地
+
+单位状态（背景颜色）:
+  黄色 = 已选中单位
+  橙色 = 忙碌中（建造设施，被 N 跳过）
+  青色 = 正在移动到目的地（被 N 跳过）
+  紫色 = 目的地标记
 
 城市操作:
   B - 打开建造菜单（在城市上时）
