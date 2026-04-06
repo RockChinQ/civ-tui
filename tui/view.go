@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/RockChinQ/civ-tui/game"
@@ -18,6 +19,9 @@ func (m Model) View() string {
 	if m.CurrentScreen == ScreenMainMenu {
 		if m.InSettings {
 			return m.renderSettings()
+		}
+		if m.InNewGame {
+			return m.renderNewGame()
 		}
 		return m.renderMainMenu()
 	}
@@ -81,14 +85,8 @@ func (m Model) renderSettings() string {
 	var sb strings.Builder
 	sb.WriteString(StyleSectionTitle.Render(i18n.T("SETTINGS")) + "\n\n")
 
-	mapSizes := []string{i18n.T("Small"), i18n.T("Medium"), i18n.T("Large")}
-	mapSizeStr := mapSizes[int(m.SettingsMapSize)]
-
 	items := []string{
 		i18n.Tf("Language: %s", i18n.LangName(i18n.GetLang())),
-		i18n.Tf("Map Size: %s", mapSizeStr),
-		i18n.Tf("AI Civs: %d", m.SettingsNumAICivs),
-		i18n.Tf("Difficulty: %s", i18n.T([]string{"Easy", "Normal", "Hard"}[m.SettingsDifficulty-1])),
 		i18n.T("Back"),
 	}
 
@@ -100,6 +98,32 @@ func (m Model) renderSettings() string {
 		}
 	}
 	sb.WriteString("\n" + StyleDim.Render(i18n.T("[←/→] Change value  [Enter/Esc] Back")))
+	return StyleInfoPanel.Width(m.Width - 4).Height(m.Height - 2).Render(sb.String())
+}
+
+func (m Model) renderNewGame() string {
+	var sb strings.Builder
+	sb.WriteString(StyleSectionTitle.Render(i18n.T("NEW GAME")) + "\n\n")
+
+	mapSizes := []string{i18n.T("Small"), i18n.T("Medium"), i18n.T("Large")}
+	mapSizeStr := mapSizes[int(m.SettingsMapSize)]
+
+	items := []string{
+		i18n.Tf("Map Size: %s", mapSizeStr),
+		i18n.Tf("AI Civs: %d", m.SettingsNumAICivs),
+		i18n.Tf("Difficulty: %s", i18n.T([]string{"Easy", "Normal", "Hard"}[m.SettingsDifficulty-1])),
+		i18n.T("Start Game"),
+		i18n.T("Back"),
+	}
+
+	for i, item := range items {
+		if i == m.NewGameCursor {
+			sb.WriteString(StyleSelectedUnit.Render("> "+item) + "\n")
+		} else {
+			sb.WriteString("  " + item + "\n")
+		}
+	}
+	sb.WriteString("\n" + StyleDim.Render(i18n.T("[←/→] Change value  [Enter] Select  [Esc] Back")))
 	return StyleInfoPanel.Width(m.Width - 4).Height(m.Height - 2).Render(sb.String())
 }
 
@@ -131,8 +155,27 @@ func (m Model) renderMap() string {
 	mapW, mapH := m.mapViewSize()
 	var sb strings.Builder
 
+	// X-axis coordinate labels (top row)
+	sb.WriteString(strings.Repeat(" ", mapLabelW))
+	for vx := 0; vx < mapW; vx++ {
+		mapX := m.ViewportX + vx
+		if mapX%mapLabelStep == 0 {
+			label := fmt.Sprintf("%-2d", mapX)
+			sb.WriteString(StyleDim.Render(label))
+		} else {
+			sb.WriteString("  ")
+		}
+	}
+	sb.WriteString("\n")
+
+	// Map rows with Y-axis labels
 	for vy := 0; vy < mapH; vy++ {
 		mapY := m.ViewportY + vy
+		if mapY%mapLabelStep == 0 {
+			sb.WriteString(StyleDim.Render(fmt.Sprintf("%2d ", mapY)))
+		} else {
+			sb.WriteString(strings.Repeat(" ", mapLabelW))
+		}
 		for vx := 0; vx < mapW; vx++ {
 			mapX := m.ViewportX + vx
 			cell := m.renderCell(mapX, mapY)
@@ -143,7 +186,7 @@ func (m Model) renderMap() string {
 		}
 	}
 
-	style := StyleMapBorder.Width(mapW * 2).Height(mapH)
+	style := StyleMapBorder.Width(mapLabelW + mapW*2).Height(mapH + mapLabelH)
 	return style.Render(sb.String())
 }
 
@@ -255,5 +298,5 @@ func terrainStyle(t model.TerrainType) lipgloss.Style {
 
 func (m Model) mapViewH() int {
 	_, h := m.mapViewSize()
-	return h
+	return h + mapLabelH
 }

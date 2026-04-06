@@ -2,6 +2,7 @@ package tui
 
 import (
 	"github.com/RockChinQ/civ-tui/game"
+	"github.com/RockChinQ/civ-tui/game/model"
 	"github.com/RockChinQ/civ-tui/game/worldmap"
 	"github.com/RockChinQ/civ-tui/i18n"
 	tea "github.com/charmbracelet/bubbletea"
@@ -91,7 +92,7 @@ func (m Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case "right", "l":
 		return m.moveCursorOrUnit(1, 0)
 	case "n", "N":
-		return m.selectNextUnit(), nil
+		return m.selectNextFocus(), nil
 	case "f", "F":
 		return m.foundCity()
 	case "w", "W":
@@ -109,17 +110,16 @@ func (m Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case "i", "I":
 		return m.startImprovement()
 	case "v", "V":
-		m.ActiveMenu = MenuInspect
-		return m, nil
-	case "enter":
-		// If on own city with no unit, open city details
+		// If on own city, show city details; otherwise inspect tile
 		city := m.Game.GetCityAt(m.CursorX, m.CursorY)
-		unit := m.Game.GetUnitAt(m.CursorX, m.CursorY)
-		if city != nil && city.CivID == 1 && unit == nil {
+		if city != nil && city.CivID == 1 {
 			m.ActiveMenu = MenuCity
 			m.MenuCursor = 0
-			return m, nil
+		} else {
+			m.ActiveMenu = MenuInspect
 		}
+		return m, nil
+	case "enter":
 		return m.endTurn()
 	}
 	return m, nil
@@ -128,6 +128,9 @@ func (m Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 func (m Model) handleMainMenu(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	if m.InSettings {
 		return m.handleSettingsMenu(msg)
+	}
+	if m.InNewGame {
+		return m.handleNewGameMenu(msg)
 	}
 
 	items := 4 // New Game, Load Game, Settings, Quit
@@ -143,7 +146,8 @@ func (m Model) handleMainMenu(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case "enter", " ":
 		switch m.MainMenuCursor {
 		case 0: // New Game
-			m.startGame()
+			m.InNewGame = true
+			m.NewGameCursor = 0
 		case 1: // Load Game
 			g, err := game.LoadFromFile(game.DefaultSavePath())
 			if err == nil {
@@ -160,8 +164,9 @@ func (m Model) handleMainMenu(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 				m.updateReachable()
 				m.centerViewport()
 			} else {
-				// No save file, just start new game
-				m.startGame()
+				// No save file, open new game setup
+				m.InNewGame = true
+				m.NewGameCursor = 0
 			}
 		case 2: // Settings
 			m.InSettings = true
@@ -176,7 +181,7 @@ func (m Model) handleMainMenu(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 }
 
 func (m Model) handleSettingsMenu(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
-	numItems := 5 // Language, Map Size, AI Civs, Difficulty, Back
+	numItems := 2 // Language, Back
 	switch msg.String() {
 	case "up", "k":
 		if m.SettingsCursor > 0 {
@@ -187,55 +192,86 @@ func (m Model) handleSettingsMenu(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.SettingsCursor++
 		}
 	case "left", "h":
-		switch m.SettingsCursor {
-		case 0: // Language
+		if m.SettingsCursor == 0 {
 			lang := i18n.GetLang()
 			if lang > 0 {
 				i18n.SetLang(lang - 1)
 			} else {
 				i18n.SetLang(i18n.Lang(int(i18n.LangCount) - 1))
 			}
-		case 1: // Map Size
-			if m.SettingsMapSize > worldmap.MapSizeSmall {
-				m.SettingsMapSize--
-			}
-		case 2: // AI Civs
-			if m.SettingsNumAICivs > 1 {
-				m.SettingsNumAICivs--
-			}
-		case 3: // Difficulty
-			if m.SettingsDifficulty > 1 {
-				m.SettingsDifficulty--
-			}
+			i18n.SaveConfig()
 		}
 	case "right", "l":
-		switch m.SettingsCursor {
-		case 0: // Language
+		if m.SettingsCursor == 0 {
 			lang := i18n.GetLang()
 			if lang < i18n.Lang(int(i18n.LangCount)-1) {
 				i18n.SetLang(lang + 1)
 			} else {
 				i18n.SetLang(0)
 			}
-		case 1: // Map Size
-			if m.SettingsMapSize < worldmap.MapSizeLarge {
-				m.SettingsMapSize++
-			}
-		case 2: // AI Civs
-			if m.SettingsNumAICivs < 4 {
-				m.SettingsNumAICivs++
-			}
-		case 3: // Difficulty
-			if m.SettingsDifficulty < 3 {
-				m.SettingsDifficulty++
-			}
+			i18n.SaveConfig()
 		}
 	case "enter":
 		if m.SettingsCursor == numItems-1 {
 			m.InSettings = false
 		}
-	case "esc", "b", "B":
+	case "esc":
 		m.InSettings = false
+	}
+	return m, nil
+}
+
+func (m Model) handleNewGameMenu(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	numItems := 5 // Map Size, AI Civs, Difficulty, Start Game, Back
+	switch msg.String() {
+	case "up", "k":
+		if m.NewGameCursor > 0 {
+			m.NewGameCursor--
+		}
+	case "down", "j":
+		if m.NewGameCursor < numItems-1 {
+			m.NewGameCursor++
+		}
+	case "left", "h":
+		switch m.NewGameCursor {
+		case 0: // Map Size
+			if m.SettingsMapSize > worldmap.MapSizeSmall {
+				m.SettingsMapSize--
+			}
+		case 1: // AI Civs
+			if m.SettingsNumAICivs > 1 {
+				m.SettingsNumAICivs--
+			}
+		case 2: // Difficulty
+			if m.SettingsDifficulty > 1 {
+				m.SettingsDifficulty--
+			}
+		}
+	case "right", "l":
+		switch m.NewGameCursor {
+		case 0: // Map Size
+			if m.SettingsMapSize < worldmap.MapSizeLarge {
+				m.SettingsMapSize++
+			}
+		case 1: // AI Civs
+			if m.SettingsNumAICivs < 4 {
+				m.SettingsNumAICivs++
+			}
+		case 2: // Difficulty
+			if m.SettingsDifficulty < 3 {
+				m.SettingsDifficulty++
+			}
+		}
+	case "enter":
+		switch m.NewGameCursor {
+		case 3: // Start Game
+			m.InNewGame = false
+			m.startGame()
+		case 4: // Back
+			m.InNewGame = false
+		}
+	case "esc":
+		m.InNewGame = false
 	}
 	return m, nil
 }
@@ -342,6 +378,62 @@ func (m Model) selectNextUnit() Model {
 	m.SelectedUnit = u
 	m.CursorX = u.X
 	m.CursorY = u.Y
+	m.updateReachable()
+	m.scrollViewportToCursor()
+	return m
+}
+
+// selectNextFocus cycles through units with moves AND player cities.
+// Used by the N key to let the player review all their assets.
+func (m Model) selectNextFocus() Model {
+	units := m.Game.PlayerUnitsWithMoves()
+	var cities []*model.City
+	for _, c := range m.Game.Cities {
+		if c.CivID == 1 {
+			cities = append(cities, c)
+		}
+	}
+
+	total := len(units) + len(cities)
+	if total == 0 {
+		m.SelectedUnit = nil
+		m.ReachableTiles = nil
+		return m
+	}
+
+	// Find current position in the combined list
+	currentIdx := -1
+	if m.SelectedUnit != nil {
+		for i, u := range units {
+			if u.ID == m.SelectedUnit.ID {
+				currentIdx = i
+				break
+			}
+		}
+	}
+	if currentIdx == -1 {
+		// Check if cursor is on a player city
+		for i, c := range cities {
+			if c.X == m.CursorX && c.Y == m.CursorY {
+				currentIdx = len(units) + i
+				break
+			}
+		}
+	}
+
+	nextIdx := (currentIdx + 1) % total
+
+	if nextIdx < len(units) {
+		u := units[nextIdx]
+		m.SelectedUnit = u
+		m.CursorX = u.X
+		m.CursorY = u.Y
+	} else {
+		c := cities[nextIdx-len(units)]
+		m.SelectedUnit = nil
+		m.CursorX = c.X
+		m.CursorY = c.Y
+	}
 	m.updateReachable()
 	m.scrollViewportToCursor()
 	return m

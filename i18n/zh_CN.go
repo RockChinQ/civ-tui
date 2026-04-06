@@ -12,8 +12,12 @@ var zhCN = map[string]string{
 	"Loading game...": "加载游戏中...",
 
 	// --- Settings ---
-	"SETTINGS":       "设置",
-	"Language: %s":   "语言: %s",
+	"SETTINGS":     "设置",
+	"Language: %s": "语言: %s",
+	"[←/→] Change value  [Enter/Esc] Back": "[←/→] 调整  [Enter/Esc] 返回",
+
+	// --- New Game setup ---
+	"NEW GAME":       "新游戏",
 	"Map Size: %s":   "地图大小: %s",
 	"AI Civs: %d":    "AI 文明: %d",
 	"Difficulty: %s": "难度: %s",
@@ -23,8 +27,9 @@ var zhCN = map[string]string{
 	"Easy":           "简单",
 	"Normal":         "普通",
 	"Hard":           "困难",
+	"Start Game":     "开始游戏",
 	"Back":           "返回",
-	"[←/→] Change value  [Enter/Esc] Back": "[←/→] 调整  [Enter/Esc] 返回",
+	"[←/→] Change value  [Enter] Select  [Esc] Back": "[←/→] 调整  [Enter] 选择  [Esc] 返回",
 
 	// --- Header ---
 	"Turn: %d  Gold: %d (+%d)  Sci: %d  %s":          "回合: %d  金币: %d (+%d)  科研: %d  %s",
@@ -144,6 +149,9 @@ var zhCN = map[string]string{
 	"Need %s to build %s":           "需要 %s 才能建造 %s",
 	"Worker building %s (%d turns)": "工人建造 %s (%d 回合)",
 	"Queued: %s in %s":              "排队生产: %s (%s)",
+	"Building: %s":                  "生产中: %s",
+	"Building: %s (+%d)":            "生产中: %s (+%d)",
+	"Production: idle":              "生产: 空闲",
 
 	// --- Game messages (game.go) ---
 	"Can't move there":                                   "无法移动到那里",
@@ -158,6 +166,13 @@ var zhCN = map[string]string{
 	"%s ranged attacks %s → hit!":                        "%s 远程攻击 %s → 命中！",
 	"Captured %s!":                                       "占领了 %s！",
 	"Attacked %s":                                        "进攻了 %s",
+	"[%s] %s attacks [%s] %s (%d,%d) → killed!":          "[%s] %s 攻击 [%s] %s (%d,%d) → 击杀！",
+	"[%s] %s attacks [%s] %s (%d,%d) → attacker killed!": "[%s] %s 攻击 [%s] %s (%d,%d) → 攻击者阵亡！",
+	"[%s] %s attacks [%s] %s (%d,%d) → both damaged":     "[%s] %s 攻击 [%s] %s (%d,%d) → 双方受伤",
+	"[%s] %s ranged attacks [%s] %s (%d,%d) → killed!":   "[%s] %s 远程攻击 [%s] %s (%d,%d) → 击杀！",
+	"[%s] %s ranged attacks [%s] %s (%d,%d) → hit!":      "[%s] %s 远程攻击 [%s] %s (%d,%d) → 命中！",
+	"[%s] %s captured [%s] %s (%d,%d)!":                  "[%s] %s 占领了 [%s] %s (%d,%d)！",
+	"[%s] %s attacked [%s] %s (%d,%d)":                   "[%s] %s 进攻了 [%s] %s (%d,%d)",
 	"You have been defeated!":                            "你被击败了！",
 	"Domination Victory! You conquered all enemies!":     "统治胜利！你征服了所有敌人！",
 	"Science Victory! You researched all technologies!":  "科技胜利！你研究了所有科技！",

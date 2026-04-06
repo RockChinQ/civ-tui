@@ -50,6 +50,16 @@ func (m Model) renderInfo() string {
 		if city != nil {
 			sb.WriteString(i18n.Tf("City: %s", city.Name) + "\n")
 			sb.WriteString(i18n.Tf("Pop: %d  HP: %d/%d", city.Population, city.HP, city.MaxHP) + "\n")
+			if len(city.ProductionQ) > 0 {
+				first := city.ProductionQ[0]
+				if len(city.ProductionQ) == 1 {
+					sb.WriteString(i18n.Tf("Building: %s", i18n.T(first.Name)) + "\n")
+				} else {
+					sb.WriteString(i18n.Tf("Building: %s (+%d)", i18n.T(first.Name), len(city.ProductionQ)-1) + "\n")
+				}
+			} else {
+				sb.WriteString(StyleYellow.Render(i18n.T("Production: idle")) + "\n")
+			}
 		}
 	}
 

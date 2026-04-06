@@ -160,10 +160,20 @@ func (m Model) startImprovement() (tea.Model, tea.Cmd) {
 }
 
 func (m Model) endTurn() (tea.Model, tea.Cmd) {
+	prev := m.SelectedUnit
 	m.Game.EndTurn()
-	units := m.Game.PlayerUnitsWithMoves()
+
+	// Keep previous unit selected if it's still alive and has moves
+	if prev != nil && prev.IsAlive() && prev.HasMoves() {
+		m.SelectedUnit = prev
+		m.updateReachable()
+		return m, nil
+	}
+
+	// Otherwise fall back to first available unit
 	m.SelectedUnit = nil
 	m.ReachableTiles = nil
+	units := m.Game.PlayerUnitsWithMoves()
 	if len(units) > 0 {
 		m.SelectedUnit = units[0]
 		m.CursorX = units[0].X

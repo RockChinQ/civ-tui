@@ -6,6 +6,15 @@ import (
 	"github.com/RockChinQ/civ-tui/i18n"
 )
 
+// civName returns the translated civilization name for the given civ ID.
+func (g *Game) civName(civID int) string {
+	civ := g.GetCiv(civID)
+	if civ != nil {
+		return i18n.T(civ.Name)
+	}
+	return "?"
+}
+
 func (g *Game) Combat(attacker, defender *model.Unit) string {
 	// Apply terrain defense bonus to reduce attacker damage
 	defBonus := 0
@@ -28,24 +37,27 @@ func (g *Game) Combat(attacker, defender *model.Unit) string {
 	defender.HP -= atkDmg
 	attacker.HP -= defDmg
 
+	atkCiv := g.civName(attacker.CivID)
+	defCiv := g.civName(defender.CivID)
 	atkName := i18n.T(model.UnitDefs[attacker.Type].Name)
 	defName := i18n.T(model.UnitDefs[defender.Type].Name)
+	x, y := defender.X, defender.Y
 	var result string
 
 	if !defender.IsAlive() {
 		g.RemoveUnit(defender)
-		result = i18n.Tf("%s attacks %s → killed!", atkName, defName)
+		result = i18n.Tf("[%s] %s attacks [%s] %s (%d,%d) → killed!", atkCiv, atkName, defCiv, defName, x, y)
 		attacker.XP += 2
 		g.levelUp(attacker)
 		g.CheckAlive()
 	} else if !attacker.IsAlive() {
 		g.RemoveUnit(attacker)
-		result = i18n.Tf("%s attacks %s → attacker killed!", atkName, defName)
+		result = i18n.Tf("[%s] %s attacks [%s] %s (%d,%d) → attacker killed!", atkCiv, atkName, defCiv, defName, x, y)
 		defender.XP++
 		g.levelUp(defender)
 		g.CheckAlive()
 	} else {
-		result = i18n.Tf("%s attacks %s → both damaged", atkName, defName)
+		result = i18n.Tf("[%s] %s attacks [%s] %s (%d,%d) → both damaged", atkCiv, atkName, defCiv, defName, x, y)
 		attacker.XP++
 		defender.XP++
 	}
@@ -65,17 +77,20 @@ func (g *Game) RangedAttack(attacker, target *model.Unit) string {
 	target.HP -= atkDmg
 	attacker.MovesLeft = 0
 
+	atkCiv := g.civName(attacker.CivID)
+	tgtCiv := g.civName(target.CivID)
 	atkName := i18n.T(model.UnitDefs[attacker.Type].Name)
 	tgtName := i18n.T(model.UnitDefs[target.Type].Name)
+	x, y := target.X, target.Y
 	var result string
 	if !target.IsAlive() {
 		g.RemoveUnit(target)
-		result = i18n.Tf("%s ranged attacks %s → killed!", atkName, tgtName)
+		result = i18n.Tf("[%s] %s ranged attacks [%s] %s (%d,%d) → killed!", atkCiv, atkName, tgtCiv, tgtName, x, y)
 		attacker.XP += 2
 		g.levelUp(attacker)
 		g.CheckAlive()
 	} else {
-		result = i18n.Tf("%s ranged attacks %s → hit!", atkName, tgtName)
+		result = i18n.Tf("[%s] %s ranged attacks [%s] %s (%d,%d) → hit!", atkCiv, atkName, tgtCiv, tgtName, x, y)
 		attacker.XP++
 	}
 	return result
@@ -87,13 +102,17 @@ func (g *Game) AttackCity(u *model.Unit, city *model.City) string {
 	city.HP -= dmg
 	u.MovesLeft = 0
 
+	atkCiv := g.civName(u.CivID)
+	defCiv := g.civName(city.CivID)
+	atkName := i18n.T(model.UnitDefs[u.Type].Name)
+
 	if city.HP <= 0 {
 		city.CivID = u.CivID
 		city.HP = city.MaxHP / 2
 		g.CheckAlive()
-		return i18n.Tf("Captured %s!", city.Name)
+		return i18n.Tf("[%s] %s captured [%s] %s (%d,%d)!", atkCiv, atkName, defCiv, city.Name, city.X, city.Y)
 	}
-	return i18n.Tf("Attacked %s", city.Name)
+	return i18n.Tf("[%s] %s attacked [%s] %s (%d,%d)", atkCiv, atkName, defCiv, city.Name, city.X, city.Y)
 }
 
 // ReachableTiles returns the set of tiles reachable by the given unit this turn.

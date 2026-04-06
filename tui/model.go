@@ -47,6 +47,8 @@ type Model struct {
 	MainMenuCursor     int
 	InSettings         bool
 	SettingsCursor     int
+	InNewGame          bool
+	NewGameCursor      int
 	SettingsMapSize    worldmap.MapSize
 	SettingsNumAICivs  int
 	SettingsDifficulty int
@@ -129,11 +131,17 @@ func (m *Model) gameMapSize() (int, int) {
 	return worldmap.MapWidth, worldmap.MapHeight
 }
 
+const (
+	mapLabelW    = 3 // width of Y-axis label gutter ("XX ")
+	mapLabelH    = 1 // height of X-axis label row
+	mapLabelStep = 5 // show a coordinate every N tiles
+)
+
 func (m *Model) mapViewSize() (int, int) {
 	headerH := 1
 	msgH := m.MsgHeight + 2
-	availH := m.Height - headerH - msgH - 2
-	availW := (m.Width - m.InfoWidth - 2) / 2
+	availH := m.Height - headerH - msgH - 2 - mapLabelH
+	availW := (m.Width - m.InfoWidth - 2 - mapLabelW) / 2
 
 	if availW < 5 {
 		availW = 5
