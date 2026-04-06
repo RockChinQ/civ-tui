@@ -251,6 +251,11 @@ func (g *Game) MoveUnit(u *model.Unit, dx, dy int) (msg string, ok bool) {
 		return "Not at war", false
 	}
 
+	// Prevent friendly unit stacking
+	if targetUnit != nil && targetUnit.CivID == u.CivID {
+		return "Tile occupied by friendly unit", false
+	}
+
 	targetCity := g.GetCityAt(nx, ny)
 	if targetCity != nil && targetCity.CivID != u.CivID {
 		if g.GetRelation(u.CivID, targetCity.CivID) == model.RelationWar {
@@ -271,6 +276,70 @@ func (g *Game) MoveUnit(u *model.Unit, dx, dy int) (msg string, ok bool) {
 	}
 
 	return "", true
+}
+
+// ReachableTiles returns the set of tiles reachable by the given unit this turn.
+// Uses BFS flood fill considering terrain movement costs and passability.
+// Returns a map of (x,y) encoded as y*mapWidth+x to remaining movement points.
+func (g *Game) ReachableTiles(u *model.Unit) map[[2]int]bool {
+	reachable := make(map[[2]int]bool)
+	if u == nil || !u.IsAlive() || !u.HasMoves() {
+		return reachable
+	}
+
+	type state struct {
+		x, y      int
+		movesLeft int
+	}
+
+	visited := make(map[[2]int]int) // position -> best movesLeft seen
+	queue := []state{{u.X, u.Y, u.MovesLeft}}
+	visited[[2]int{u.X, u.Y}] = u.MovesLeft
+
+	dirs := [][2]int{{0, -1}, {0, 1}, {-1, 0}, {1, 0}}
+
+	for len(queue) > 0 {
+		cur := queue[0]
+		queue = queue[1:]
+
+		for _, d := range dirs {
+			nx, ny := cur.x+d[0], cur.y+d[1]
+			if !g.Map.InBounds(nx, ny) {
+				continue
+			}
+			t := model.Terrains[g.Map.Tiles[ny][nx].Terrain]
+			if !t.Passable {
+				continue
+			}
+			cost := t.MoveCost
+			if cost > cur.movesLeft {
+				continue
+			}
+			remaining := cur.movesLeft - cost
+
+			pos := [2]int{nx, ny}
+			if prev, ok := visited[pos]; ok && prev >= remaining {
+				continue
+			}
+
+			// Check for blocking units
+			blocker := g.GetUnitAt(nx, ny)
+			if blocker != nil && blocker.CivID == u.CivID && blocker.ID != u.ID {
+				continue // Can't move through friendly units
+			}
+
+			visited[pos] = remaining
+			reachable[pos] = true
+			if remaining > 0 {
+				queue = append(queue, state{nx, ny, remaining})
+			}
+		}
+	}
+
+	// Remove the unit's current position from reachable
+	delete(reachable, [2]int{u.X, u.Y})
+
+	return reachable
 }
 
 func (g *Game) Combat(attacker, defender *model.Unit) string {

@@ -164,6 +164,12 @@ func (m Model) renderCell(x, y int) string {
 		}
 	}
 
+	// Check if tile is in movement range
+	isReachable := false
+	if m.ReachableTiles != nil && !m.RangeMode {
+		_, isReachable = m.ReachableTiles[[2]int{x, y}]
+	}
+
 	if !tile.Revealed {
 		if isCursor {
 			return StyleCursor.Render("░ ")
@@ -216,6 +222,8 @@ func (m Model) renderCell(x, y int) string {
 		rendered = StyleCursor.Render(ch + " ")
 	} else if isInRange {
 		rendered = StyleRangeHighlight.Render(ch + " ")
+	} else if isReachable {
+		rendered = StyleMoveHighlight.Render(ch + " ")
 	}
 	return rendered
 }
@@ -262,6 +270,14 @@ func (m Model) renderInfo() string {
 			sb.WriteString(fmt.Sprintf("Terrain: %s\n", t.Name))
 			if t.DefenseBonus > 0 {
 				sb.WriteString(fmt.Sprintf("Defense bonus: +%d%%\n", t.DefenseBonus))
+			}
+		}
+		// Show terrain info at cursor if cursor is not on unit
+		if m.CursorX != u.X || m.CursorY != u.Y {
+			curTile := m.Game.Map.GetTile(m.CursorX, m.CursorY)
+			if curTile != nil && curTile.Revealed {
+				ct := model.Terrains[curTile.Terrain]
+				sb.WriteString(fmt.Sprintf("Cursor: %s (cost %d)\n", ct.Name, ct.MoveCost))
 			}
 		}
 	} else {
@@ -556,6 +572,7 @@ CIV-TUI HELP
 
 MOVEMENT:
   Arrow keys / hjkl - Move cursor / selected unit
+  Green tiles show reachable positions
 
 UNIT ACTIONS:
   F - Found City (Settler only)
@@ -581,6 +598,8 @@ GAME:
 DISPLAY:
   Blue units/cities = yours
   Red units/cities = enemy
+  Green highlight = reachable tiles
+  Red highlight = ranged attack range
   Dimmed = explored but not visible
   Dark tiles = fog of war
 

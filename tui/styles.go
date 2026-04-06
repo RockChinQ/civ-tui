@@ -55,4 +55,5 @@ var (
 
 var (
 	StyleRangeHighlight = lipgloss.NewStyle().Background(lipgloss.Color("52")).Foreground(lipgloss.Color("255"))
+	StyleMoveHighlight  = lipgloss.NewStyle().Background(lipgloss.Color("22")).Foreground(lipgloss.Color("255"))
 )

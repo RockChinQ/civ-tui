@@ -51,6 +51,7 @@ type Model struct {
 	SettingsDifficulty int
 	RangeMode          bool
 	PendingPromotion   *model.Unit
+	ReachableTiles     map[[2]int]bool // cached reachable tiles for selected unit
 }
 
 func NewModel() Model {
@@ -84,6 +85,7 @@ func (m *Model) startGame() {
 			break
 		}
 	}
+	m.updateReachable()
 	m.centerViewport()
 }
 
@@ -150,4 +152,13 @@ func (m *Model) mapViewSize() (int, int) {
 
 func (m Model) Init() tea.Cmd {
 	return nil
+}
+
+// updateReachable recalculates the reachable tile cache for the selected unit.
+func (m *Model) updateReachable() {
+	if m.Game != nil && m.SelectedUnit != nil && m.SelectedUnit.IsAlive() && m.SelectedUnit.HasMoves() {
+		m.ReachableTiles = m.Game.ReachableTiles(m.SelectedUnit)
+	} else {
+		m.ReachableTiles = nil
+	}
 }

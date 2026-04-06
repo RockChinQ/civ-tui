@@ -172,3 +172,153 @@ func TestMapGeneration(t *testing.T) {
 		}
 	}
 }
+
+func TestUnitMovement(t *testing.T) {
+	g := NewGame(defaultOpts())
+
+	var warrior *model.Unit
+	for _, u := range g.Units {
+		if u.CivID == 1 && u.Type == model.UnitWarrior {
+			warrior = u
+			break
+		}
+	}
+	if warrior == nil {
+		t.Skip("No warrior found")
+	}
+
+	origX, origY := warrior.X, warrior.Y
+	origMoves := warrior.MovesLeft
+
+	// Try all 4 directions until one works
+	dirs := [][2]int{{0, -1}, {0, 1}, {-1, 0}, {1, 0}}
+	moved := false
+	for _, d := range dirs {
+		msg, ok := g.MoveUnit(warrior, d[0], d[1])
+		if ok {
+			moved = true
+			if warrior.X == origX && warrior.Y == origY {
+				// Only same position if combat occurred
+				if msg == "" {
+					t.Error("Unit position should change after successful move")
+				}
+			}
+			if msg == "" && warrior.MovesLeft >= origMoves {
+				t.Error("Movement should deduct move points")
+			}
+			break
+		}
+	}
+	if !moved {
+		t.Skip("Could not find a passable adjacent tile")
+	}
+}
+
+func TestMovementBlockedByImpassable(t *testing.T) {
+	g := NewGame(defaultOpts())
+
+	// Create a warrior and place it manually next to an ocean tile
+	warrior := g.AddUnit(model.UnitWarrior, 1, 1, 1)
+	warrior.MovesLeft = warrior.MaxMoves
+
+	// Find an ocean tile adjacent to the warrior
+	dirs := [][2]int{{0, -1}, {0, 1}, {-1, 0}, {1, 0}}
+	for _, d := range dirs {
+		nx, ny := warrior.X+d[0], warrior.Y+d[1]
+		if g.Map.InBounds(nx, ny) {
+			tile := g.Map.GetTile(nx, ny)
+			if !model.Terrains[tile.Terrain].Passable {
+				msg, ok := g.MoveUnit(warrior, d[0], d[1])
+				if ok {
+					t.Error("Should not be able to move onto impassable terrain")
+				}
+				if msg != "Terrain not passable" {
+					t.Errorf("Expected 'Terrain not passable', got %q", msg)
+				}
+				return
+			}
+		}
+	}
+	t.Skip("No impassable terrain adjacent to test position")
+}
+
+func TestFriendlyUnitStacking(t *testing.T) {
+	g := NewGame(defaultOpts())
+
+	// Find a passable tile
+	var px, py int
+	for y := 5; y < g.Map.Height-5; y++ {
+		for x := 5; x < g.Map.Width-5; x++ {
+			tile := g.Map.GetTile(x, y)
+			if model.Terrains[tile.Terrain].Passable {
+				// Check adjacent tile too
+				adj := g.Map.GetTile(x+1, y)
+				if adj != nil && model.Terrains[adj.Terrain].Passable {
+					px, py = x, y
+					goto found
+				}
+			}
+		}
+	}
+found:
+
+	// Place two friendly warriors adjacent to each other
+	w1 := g.AddUnit(model.UnitWarrior, 1, px, py)
+	g.AddUnit(model.UnitWarrior, 1, px+1, py)
+	w1.MovesLeft = w1.MaxMoves
+
+	// Try to move w1 onto w2's tile
+	msg, ok := g.MoveUnit(w1, 1, 0)
+	if ok {
+		t.Error("Should not be able to stack friendly units")
+	}
+	if msg != "Tile occupied by friendly unit" {
+		t.Errorf("Expected 'Tile occupied by friendly unit', got %q", msg)
+	}
+}
+
+func TestReachableTiles(t *testing.T) {
+	g := NewGame(defaultOpts())
+
+	var warrior *model.Unit
+	for _, u := range g.Units {
+		if u.CivID == 1 && u.Type == model.UnitWarrior {
+			warrior = u
+			break
+		}
+	}
+	if warrior == nil {
+		t.Skip("No warrior found")
+	}
+
+	reachable := g.ReachableTiles(warrior)
+
+	// Should not be empty (warrior has 2 moves, there should be at least some passable tiles)
+	if len(reachable) == 0 {
+		t.Skip("No reachable tiles from warrior position (surrounded by impassable)")
+	}
+
+	// Unit's own position should not be in reachable set
+	if reachable[[2]int{warrior.X, warrior.Y}] {
+		t.Error("Unit's current position should not be in reachable tiles")
+	}
+
+	// All reachable tiles should be passable
+	for pos := range reachable {
+		tile := g.Map.GetTile(pos[0], pos[1])
+		if tile == nil || !model.Terrains[tile.Terrain].Passable {
+			t.Errorf("Reachable tile at (%d,%d) is not passable", pos[0], pos[1])
+		}
+	}
+
+	// All reachable tiles should be within reasonable distance
+	for pos := range reachable {
+		dist := abs(pos[0]-warrior.X) + abs(pos[1]-warrior.Y)
+		if dist > warrior.MovesLeft {
+			// Could be reachable via cheaper path, but Manhattan distance
+			// is a lower bound for BFS cost, so this should hold
+			t.Errorf("Reachable tile at (%d,%d) is Manhattan distance %d from warrior with %d moves",
+				pos[0], pos[1], dist, warrior.MovesLeft)
+		}
+	}
+}

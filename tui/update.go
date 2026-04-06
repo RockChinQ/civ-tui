@@ -78,6 +78,7 @@ func (m Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m, nil
 	case "esc":
 		m.SelectedUnit = nil
+		m.ReachableTiles = nil
 		m.ActiveMenu = MenuNone
 		m.RangeMode = false
 		return m, nil
@@ -153,6 +154,7 @@ func (m Model) handleMainMenu(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 						break
 					}
 				}
+				m.updateReachable()
 				m.centerViewport()
 			} else {
 				// No save file, just start new game
@@ -233,15 +235,36 @@ func (m Model) moveCursorOrUnit(dx, dy int) (tea.Model, tea.Cmd) {
 			}
 			if !u.IsAlive() {
 				m.SelectedUnit = nil
+				m.ReachableTiles = nil
+				// Auto-select next unit with moves
+				m = m.selectNextUnit()
+			} else if !u.HasMoves() {
+				// Unit exhausted moves, auto-select next unit
+				units := m.Game.PlayerUnitsWithMoves()
+				if len(units) > 0 {
+					m.SelectedUnit = units[0]
+					m.CursorX = units[0].X
+					m.CursorY = units[0].Y
+				}
+				m.updateReachable()
+			} else {
+				m.updateReachable()
 			}
 		} else {
 			m.moveCursor(dx, dy)
+			// Auto-select player unit at cursor position
+			cu := m.Game.GetUnitAt(m.CursorX, m.CursorY)
+			if cu != nil && cu.CivID == 1 && cu.IsAlive() {
+				m.SelectedUnit = cu
+				m.updateReachable()
+			}
 		}
 	} else {
 		m.moveCursor(dx, dy)
 		u := m.Game.GetUnitAt(m.CursorX, m.CursorY)
 		if u != nil && u.CivID == 1 && u.IsAlive() {
 			m.SelectedUnit = u
+			m.updateReachable()
 		}
 	}
 	m.scrollViewportToCursor()
@@ -286,6 +309,7 @@ func (m *Model) scrollViewportToCursor() {
 func (m Model) selectNextUnit() Model {
 	units := m.Game.PlayerUnitsWithMoves()
 	if len(units) == 0 {
+		m.ReachableTiles = nil
 		return m
 	}
 	idx := 0
@@ -301,6 +325,7 @@ func (m Model) selectNextUnit() Model {
 	m.SelectedUnit = u
 	m.CursorX = u.X
 	m.CursorY = u.Y
+	m.updateReachable()
 	m.scrollViewportToCursor()
 	return m
 }
@@ -313,6 +338,9 @@ func (m Model) foundCity() (tea.Model, tea.Cmd) {
 	m.Game.AddMessage(msg)
 	if ok {
 		m.SelectedUnit = nil
+		m.ReachableTiles = nil
+		// Auto-select next unit with moves
+		m = m.selectNextUnit()
 	}
 	return m, nil
 }
@@ -321,6 +349,9 @@ func (m Model) waitUnit() (tea.Model, tea.Cmd) {
 	if m.SelectedUnit != nil {
 		m.SelectedUnit.Waiting = true
 		m.SelectedUnit = nil
+		m.ReachableTiles = nil
+		// Auto-select next unit with moves
+		m = m.selectNextUnit()
 	}
 	return m, nil
 }
@@ -610,10 +641,12 @@ func (m Model) endTurn() (tea.Model, tea.Cmd) {
 	m.Game.EndTurn()
 	units := m.Game.PlayerUnitsWithMoves()
 	m.SelectedUnit = nil
+	m.ReachableTiles = nil
 	if len(units) > 0 {
 		m.SelectedUnit = units[0]
 		m.CursorX = units[0].X
 		m.CursorY = units[0].Y
+		m.updateReachable()
 		m.scrollViewportToCursor()
 	}
 	return m, nil
