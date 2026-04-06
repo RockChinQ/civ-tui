@@ -132,14 +132,13 @@ func (g *Game) EndTurn() []string {
 		if u.IsBusy() {
 			continue // task in progress – movement deferred
 		}
-		if u.X == u.DestX && u.Y == u.DestY {
-			u.HasDest = false
-			continue
-		}
 		path := g.FindPath(u, u.DestX, u.DestY)
 		if len(path) == 0 {
+			// Already at destination or no path exists
+			if u.X != u.DestX || u.Y != u.DestY {
+				msgs = append(msgs, i18n.Tf("Unit %s cannot reach destination", i18n.T(model.UnitDefs[u.Type].Name)))
+			}
 			u.HasDest = false
-			msgs = append(msgs, i18n.Tf("Unit %s cannot reach destination", i18n.T(model.UnitDefs[u.Type].Name)))
 			continue
 		}
 		for i := 0; i < len(path) && u.MovesLeft > 0; i++ {

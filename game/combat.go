@@ -183,6 +183,9 @@ func (g *Game) ReachableTiles(u *model.Unit) map[[2]int]bool {
 // units are treated as passable (MoveUnit handles combat). Returns a slice of
 // [x, y] positions from the next step up to and including the destination, or nil
 // when no path exists.
+//
+// The priority queue is implemented as a plain slice with a linear minimum scan.
+// This is O(n²) but adequate for the small map sizes in this game (≤40×40 tiles).
 func (g *Game) FindPath(u *model.Unit, toX, toY int) [][2]int {
 	if u.X == toX && u.Y == toY {
 		return nil
