@@ -7,6 +7,7 @@ import (
 
 	"github.com/RockChinQ/civ-tui/game/model"
 	"github.com/RockChinQ/civ-tui/game/worldmap"
+	"github.com/RockChinQ/civ-tui/i18n"
 )
 
 type GameState int
@@ -122,7 +123,7 @@ func NewGame(opts GameOptions) *Game {
 	}
 
 	g.RevealForCiv(1)
-	g.AddMessage("Turn 1: Welcome to Civ-TUI! Found a city with [F].")
+	g.AddMessage(i18n.T("Turn 1: Welcome to Civ-TUI! Found a city with [F]."))
 
 	return g
 }
@@ -229,14 +230,14 @@ func (g *Game) MakePeace(civA, civB *model.Civ) {
 func (g *Game) MoveUnit(u *model.Unit, dx, dy int) (msg string, ok bool) {
 	nx, ny := u.X+dx, u.Y+dy
 	if !g.Map.InBounds(nx, ny) {
-		return "Can't move there", false
+		return i18n.T("Can't move there"), false
 	}
 	t := model.Terrains[g.Map.Tiles[ny][nx].Terrain]
 	if !t.Passable {
-		return "Terrain not passable", false
+		return i18n.T("Terrain not passable"), false
 	}
 	if t.MoveCost > u.MovesLeft {
-		return "Not enough movement", false
+		return i18n.T("Not enough movement"), false
 	}
 
 	targetUnit := g.GetUnitAt(nx, ny)
@@ -248,12 +249,12 @@ func (g *Game) MoveUnit(u *model.Unit, dx, dy int) (msg string, ok bool) {
 			}
 			return msg, true
 		}
-		return "Not at war", false
+		return i18n.T("Not at war"), false
 	}
 
 	// Prevent friendly unit stacking
 	if targetUnit != nil && targetUnit.CivID == u.CivID {
-		return "Tile occupied by friendly unit", false
+		return i18n.T("Tile occupied by friendly unit"), false
 	}
 
 	targetCity := g.GetCityAt(nx, ny)
@@ -262,7 +263,7 @@ func (g *Game) MoveUnit(u *model.Unit, dx, dy int) (msg string, ok bool) {
 			msg = g.AttackCity(u, targetCity)
 			return msg, true
 		}
-		return "Not at war", false
+		return i18n.T("Not at war"), false
 	}
 
 	u.X, u.Y = nx, ny
@@ -364,22 +365,24 @@ func (g *Game) Combat(attacker, defender *model.Unit) string {
 	defender.HP -= atkDmg
 	attacker.HP -= defDmg
 
-	result := model.UnitDefs[attacker.Type].Name + " attacks " + model.UnitDefs[defender.Type].Name
+	atkName := i18n.T(model.UnitDefs[attacker.Type].Name)
+	defName := i18n.T(model.UnitDefs[defender.Type].Name)
+	var result string
 
 	if !defender.IsAlive() {
 		g.RemoveUnit(defender)
-		result += " → killed!"
+		result = i18n.Tf("%s attacks %s → killed!", atkName, defName)
 		attacker.XP += 2
 		g.levelUp(attacker)
 		g.CheckAlive()
 	} else if !attacker.IsAlive() {
 		g.RemoveUnit(attacker)
-		result += " → attacker killed!"
+		result = i18n.Tf("%s attacks %s → attacker killed!", atkName, defName)
 		defender.XP++
 		g.levelUp(defender)
 		g.CheckAlive()
 	} else {
-		result += " → both damaged"
+		result = i18n.Tf("%s attacks %s → both damaged", atkName, defName)
 		attacker.XP++
 		defender.XP++
 	}
@@ -399,15 +402,17 @@ func (g *Game) RangedAttack(attacker, target *model.Unit) string {
 	target.HP -= atkDmg
 	attacker.MovesLeft = 0
 
-	result := model.UnitDefs[attacker.Type].Name + " ranged attacks " + model.UnitDefs[target.Type].Name
+	atkName := i18n.T(model.UnitDefs[attacker.Type].Name)
+	tgtName := i18n.T(model.UnitDefs[target.Type].Name)
+	var result string
 	if !target.IsAlive() {
 		g.RemoveUnit(target)
-		result += " → killed!"
+		result = i18n.Tf("%s ranged attacks %s → killed!", atkName, tgtName)
 		attacker.XP += 2
 		g.levelUp(attacker)
 		g.CheckAlive()
 	} else {
-		result += " → hit!"
+		result = i18n.Tf("%s ranged attacks %s → hit!", atkName, tgtName)
 		attacker.XP++
 	}
 	return result
@@ -423,9 +428,9 @@ func (g *Game) AttackCity(u *model.Unit, city *model.City) string {
 		city.CivID = u.CivID
 		city.HP = city.MaxHP / 2
 		g.CheckAlive()
-		return "Captured " + city.Name + "!"
+		return i18n.Tf("Captured %s!", city.Name)
 	}
-	return "Attacked " + city.Name
+	return i18n.Tf("Attacked %s", city.Name)
 }
 
 func (g *Game) RemoveUnit(u *model.Unit) {
@@ -494,12 +499,12 @@ func (g *Game) CheckVictory() {
 	}
 	if !playerAlive {
 		g.State = StateDefeat
-		g.AddMessage("You have been defeated!")
+		g.AddMessage(i18n.T("You have been defeated!"))
 		return
 	}
 	if !enemyAlive {
 		g.State = StateVictory
-		g.AddMessage("Domination Victory! You conquered all enemies!")
+		g.AddMessage(i18n.T("Domination Victory! You conquered all enemies!"))
 		return
 	}
 	playerCiv := g.GetCiv(1)
@@ -513,7 +518,7 @@ func (g *Game) CheckVictory() {
 		}
 		if allDone {
 			g.State = StateVictory
-			g.AddMessage("Science Victory! You researched all technologies!")
+			g.AddMessage(i18n.T("Science Victory! You researched all technologies!"))
 		}
 	}
 }
@@ -527,17 +532,18 @@ func (g *Game) EndTurn() []string {
 			continue
 		}
 		tile := g.Map.GetTile(city.X, city.Y)
-		built, msg := city.ProcessTurn(tile)
-		if msg != "" {
-			msgs = append(msgs, msg)
+		prevPop := city.Population
+		built, _ := city.ProcessTurn(tile)
+		if city.Population > prevPop {
+			msgs = append(msgs, i18n.Tf("%s grew to population %d", city.Name, city.Population))
 		}
 		if built != nil {
 			if built.IsUnit {
 				g.AddUnit(built.UnitType, city.CivID, city.X, city.Y)
-				msgs = append(msgs, city.Name+" trained "+built.Name)
+				msgs = append(msgs, i18n.Tf("%s trained %s", city.Name, i18n.T(built.Name)))
 			} else {
 				city.Buildings[built.BuildingType] = true
-				msgs = append(msgs, city.Name+" built "+built.Name)
+				msgs = append(msgs, i18n.Tf("%s built %s", city.Name, i18n.T(built.Name)))
 			}
 		}
 		civ.Gold += city.GoldYield(tile)
@@ -573,7 +579,7 @@ func (g *Game) EndTurn() []string {
 			}
 			completed := civ.ProcessResearch(civ.Science/numCities, model.AllTechs)
 			if completed != "" {
-				msgs = append(msgs, civ.Name+" discovered "+completed+"!")
+				msgs = append(msgs, i18n.Tf("%s discovered %s!", i18n.T(civ.Name), i18n.T(completed)))
 			}
 		}
 	}
@@ -611,7 +617,7 @@ func (g *Game) EndTurn() []string {
 				if t != nil {
 					t.Improvement = u.BuildingImprovement
 					impName := model.Improvements[u.BuildingImprovement].Name
-					msgs = append(msgs, "Worker built "+impName+" at ("+strconv.Itoa(u.X)+","+strconv.Itoa(u.Y)+")")
+					msgs = append(msgs, i18n.Tf("Worker built %s at (%d,%d)", i18n.T(impName), u.X, u.Y))
 				}
 				u.BuildingImprovement = model.ImprovementNone
 				u.ImprovementTurnsLeft = 0
@@ -632,7 +638,7 @@ func (g *Game) EndTurn() []string {
 
 	if g.Turn > g.MaxTurns {
 		g.State = StateDraw
-		msgs = append(msgs, "Turn limit reached! Game over.")
+		msgs = append(msgs, i18n.T("Turn limit reached! Game over."))
 	}
 
 	g.CheckVictory()
@@ -668,15 +674,15 @@ func (g *Game) PlayerUnitsWithMoves() []*model.Unit {
 
 func (g *Game) FoundCity(u *model.Unit, cityNames []string) (string, bool) {
 	if u.Type != model.UnitSettler {
-		return "Only Settlers can found cities", false
+		return i18n.T("Only Settlers can found cities"), false
 	}
 	t := g.Map.GetTile(u.X, u.Y)
 	if t == nil || !model.Terrains[t.Terrain].Passable {
-		return "Cannot found city here", false
+		return i18n.T("Cannot found city here"), false
 	}
 	for _, c := range g.Cities {
 		if abs(c.X-u.X)+abs(c.Y-u.Y) < model.MinCityDistance {
-			return "Too close to another city", false
+			return i18n.T("Too close to another city"), false
 		}
 	}
 
@@ -684,7 +690,7 @@ func (g *Game) FoundCity(u *model.Unit, cityNames []string) (string, bool) {
 	city := g.AddCity(name, u.CivID, u.X, u.Y)
 	g.Map.Reveal(u.X, u.Y, model.VisionRadius)
 	u.HP = 0
-	return "Founded " + city.Name + "!", true
+	return i18n.Tf("Founded %s!", city.Name), true
 }
 
 func (g *Game) civCityName(civID int) string {

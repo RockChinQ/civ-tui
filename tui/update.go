@@ -1,11 +1,10 @@
 package tui
 
 import (
-	"strconv"
-
 	"github.com/RockChinQ/civ-tui/game"
 	"github.com/RockChinQ/civ-tui/game/model"
 	"github.com/RockChinQ/civ-tui/game/worldmap"
+	"github.com/RockChinQ/civ-tui/i18n"
 	tea "github.com/charmbracelet/bubbletea"
 )
 
@@ -178,7 +177,7 @@ func (m Model) handleMainMenu(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 }
 
 func (m Model) handleSettingsMenu(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
-	numItems := 4 // Map Size, AI Civs, Difficulty, Back
+	numItems := 5 // Language, Map Size, AI Civs, Difficulty, Back
 	switch msg.String() {
 	case "up", "k":
 		if m.SettingsCursor > 0 {
@@ -190,30 +189,44 @@ func (m Model) handleSettingsMenu(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		}
 	case "left", "h":
 		switch m.SettingsCursor {
-		case 0:
+		case 0: // Language
+			lang := i18n.GetLang()
+			if lang > 0 {
+				i18n.SetLang(lang - 1)
+			} else {
+				i18n.SetLang(i18n.Lang(int(i18n.LangCount) - 1))
+			}
+		case 1: // Map Size
 			if m.SettingsMapSize > worldmap.MapSizeSmall {
 				m.SettingsMapSize--
 			}
-		case 1:
+		case 2: // AI Civs
 			if m.SettingsNumAICivs > 1 {
 				m.SettingsNumAICivs--
 			}
-		case 2:
+		case 3: // Difficulty
 			if m.SettingsDifficulty > 1 {
 				m.SettingsDifficulty--
 			}
 		}
 	case "right", "l":
 		switch m.SettingsCursor {
-		case 0:
+		case 0: // Language
+			lang := i18n.GetLang()
+			if lang < i18n.Lang(int(i18n.LangCount)-1) {
+				i18n.SetLang(lang + 1)
+			} else {
+				i18n.SetLang(0)
+			}
+		case 1: // Map Size
 			if m.SettingsMapSize < worldmap.MapSizeLarge {
 				m.SettingsMapSize++
 			}
-		case 1:
+		case 2: // AI Civs
 			if m.SettingsNumAICivs < 4 {
 				m.SettingsNumAICivs++
 			}
-		case 2:
+		case 3: // Difficulty
 			if m.SettingsDifficulty < 3 {
 				m.SettingsDifficulty++
 			}
@@ -383,11 +396,11 @@ func (m Model) enterRangeMode() (tea.Model, tea.Cmd) {
 	}
 	stats := model.UnitDefs[m.SelectedUnit.Type]
 	if stats.Range <= 0 {
-		m.Game.AddMessage("This unit cannot perform ranged attacks")
+		m.Game.AddMessage(i18n.T("This unit cannot perform ranged attacks"))
 		return m, nil
 	}
 	m.RangeMode = true
-	m.Game.AddMessage("Ranged mode: select target with arrow keys, Enter to fire, Esc to cancel")
+	m.Game.AddMessage(i18n.T("Ranged mode: select target with arrow keys, Enter to fire, Esc to cancel"))
 	return m, nil
 }
 
@@ -413,7 +426,7 @@ func (m Model) handleRangedMode(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			stats := model.UnitDefs[m.SelectedUnit.Type]
 			dist := worldmap.AbsDist(m.SelectedUnit.X, m.SelectedUnit.Y, m.CursorX, m.CursorY)
 			if dist > stats.Range {
-				m.Game.AddMessage("Target out of range")
+				m.Game.AddMessage(i18n.T("Target out of range"))
 			} else {
 				target := m.Game.GetUnitAt(m.CursorX, m.CursorY)
 				if target != nil && target.CivID != m.SelectedUnit.CivID {
@@ -423,7 +436,7 @@ func (m Model) handleRangedMode(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 						m.SelectedUnit = nil
 					}
 				} else {
-					m.Game.AddMessage("No enemy unit at target")
+					m.Game.AddMessage(i18n.T("No enemy unit at target"))
 				}
 			}
 			m.RangeMode = false
@@ -459,10 +472,10 @@ func (m Model) handleDiplomacyMenu(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 				rel := m.Game.GetRelation(1, target.ID)
 				if rel == model.RelationWar {
 					m.Game.MakePeace(player, target)
-					m.Game.AddMessage("Made peace with " + target.Name)
+					m.Game.AddMessage(i18n.Tf("Made peace with %s", i18n.T(target.Name)))
 				} else {
 					m.Game.DeclareWar(player, target)
-					m.Game.AddMessage("Declared war on " + target.Name)
+					m.Game.AddMessage(i18n.Tf("Declared war on %s", i18n.T(target.Name)))
 				}
 			}
 		}
@@ -506,7 +519,7 @@ func (m Model) handlePromotionMenu(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		if m.PendingPromotion != nil {
 			m.PendingPromotion.Attack++
 			m.PendingPromotion.XP -= 5
-			m.Game.AddMessage(model.UnitDefs[m.PendingPromotion.Type].Name + " promoted!")
+			m.Game.AddMessage(i18n.Tf("%s promoted!", i18n.T(model.UnitDefs[m.PendingPromotion.Type].Name)))
 			m.PendingPromotion = nil
 		}
 		m.ActiveMenu = MenuNone
@@ -520,9 +533,9 @@ func (m Model) saveGame() (tea.Model, tea.Cmd) {
 	}
 	err := m.Game.SaveToFile(game.DefaultSavePath())
 	if err != nil {
-		m.Game.AddMessage("Failed to save: " + err.Error())
+		m.Game.AddMessage(i18n.Tf("Failed to save: %s", err.Error()))
 	} else {
-		m.Game.AddMessage("Game saved!")
+		m.Game.AddMessage(i18n.T("Game saved!"))
 	}
 	return m, nil
 }
@@ -552,13 +565,13 @@ func (m Model) startImprovement() (tea.Model, tea.Cmd) {
 	// Check tech requirement
 	playerCiv := m.Game.GetCiv(1)
 	if impDef.RequiresTech != "" && (playerCiv == nil || !playerCiv.Techs[impDef.RequiresTech]) {
-		m.Game.AddMessage("Need " + impDef.RequiresTech + " to build " + impDef.Name)
+		m.Game.AddMessage(i18n.Tf("Need %s to build %s", i18n.T(impDef.RequiresTech), i18n.T(impDef.Name)))
 		return m, nil
 	}
 	u.BuildingImprovement = imp
 	u.ImprovementTurnsLeft = impDef.BuildTurns
 	u.Waiting = true
-	m.Game.AddMessage("Worker building " + impDef.Name + " (" + strconv.Itoa(impDef.BuildTurns) + " turns)")
+	m.Game.AddMessage(i18n.Tf("Worker building %s (%d turns)", i18n.T(impDef.Name), impDef.BuildTurns))
 	return m, nil
 }
 
@@ -586,7 +599,7 @@ func (m Model) handleBuildMenu(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		if city != nil && m.MenuCursor < len(items) {
 			item := items[m.MenuCursor]
 			city.ProductionQ = append(city.ProductionQ, item)
-			m.Game.AddMessage("Queued: " + item.Name + " in " + city.Name)
+			m.Game.AddMessage(i18n.Tf("Queued: %s in %s", i18n.T(item.Name), city.Name))
 		}
 		m.ActiveMenu = MenuNone
 	}
@@ -643,7 +656,7 @@ func (m Model) handleTechMenu(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		if m.MenuCursor < len(available) {
 			playerCiv.ResearchTech(available[m.MenuCursor])
 			playerCiv.ResearchProgress = 0
-			m.Game.AddMessage("Researching: " + available[m.MenuCursor].Name)
+			m.Game.AddMessage(i18n.Tf("Researching: %s", i18n.T(available[m.MenuCursor].Name)))
 		}
 		m.ActiveMenu = MenuNone
 	}

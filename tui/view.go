@@ -2,18 +2,18 @@ package tui
 
 import (
 	"fmt"
-	"strconv"
 	"strings"
 
 	"github.com/RockChinQ/civ-tui/game"
 	"github.com/RockChinQ/civ-tui/game/model"
 	"github.com/RockChinQ/civ-tui/game/worldmap"
+	"github.com/RockChinQ/civ-tui/i18n"
 	"github.com/charmbracelet/lipgloss"
 )
 
 func (m Model) View() string {
 	if m.Width == 0 || m.Height == 0 {
-		return "Loading..."
+		return i18n.T("Loading...")
 	}
 
 	if m.CurrentScreen == ScreenMainMenu {
@@ -24,7 +24,7 @@ func (m Model) View() string {
 	}
 
 	if m.Game == nil {
-		return "Loading game..."
+		return i18n.T("Loading game...")
 	}
 
 	if m.ActiveMenu == MenuHelp {
@@ -63,10 +63,10 @@ func (m Model) View() string {
 
 func (m Model) renderMainMenu() string {
 	var sb strings.Builder
-	title := "  CIV-TUI\n  A Terminal Civilization Game\n"
+	title := "  CIV-TUI\n  " + i18n.T("A Terminal Civilization Game") + "\n"
 	sb.WriteString(StyleBold.Render(title) + "\n")
 
-	items := []string{"New Game", "Load Game", "Settings", "Quit"}
+	items := []string{i18n.T("New Game"), i18n.T("Load Game"), i18n.T("Settings"), i18n.T("Quit")}
 	for i, item := range items {
 		if i == m.MainMenuCursor {
 			sb.WriteString(StyleSelectedUnit.Render("> "+item) + "\n")
@@ -74,22 +74,23 @@ func (m Model) renderMainMenu() string {
 			sb.WriteString("  " + item + "\n")
 		}
 	}
-	sb.WriteString("\n" + StyleDim.Render("[↑/↓] Navigate  [Enter] Select  [Q] Quit"))
+	sb.WriteString("\n" + StyleDim.Render(i18n.T("[↑/↓] Navigate  [Enter] Select  [Q] Quit")))
 	return StyleInfoPanel.Width(m.Width - 4).Height(m.Height - 2).Render(sb.String())
 }
 
 func (m Model) renderSettings() string {
 	var sb strings.Builder
-	sb.WriteString(StyleSectionTitle.Render("SETTINGS") + "\n\n")
+	sb.WriteString(StyleSectionTitle.Render(i18n.T("SETTINGS")) + "\n\n")
 
-	mapSizes := []string{"Small", "Medium", "Large"}
+	mapSizes := []string{i18n.T("Small"), i18n.T("Medium"), i18n.T("Large")}
 	mapSizeStr := mapSizes[int(m.SettingsMapSize)]
 
 	items := []string{
-		"Map Size: " + mapSizeStr,
-		"AI Civs:  " + strconv.Itoa(m.SettingsNumAICivs),
-		"Difficulty: " + []string{"Easy", "Normal", "Hard"}[m.SettingsDifficulty-1],
-		"Back",
+		i18n.Tf("Language: %s", i18n.LangName(i18n.GetLang())),
+		i18n.Tf("Map Size: %s", mapSizeStr),
+		i18n.Tf("AI Civs: %d", m.SettingsNumAICivs),
+		i18n.Tf("Difficulty: %s", i18n.T([]string{"Easy", "Normal", "Hard"}[m.SettingsDifficulty-1])),
+		i18n.T("Back"),
 	}
 
 	for i, item := range items {
@@ -99,7 +100,7 @@ func (m Model) renderSettings() string {
 			sb.WriteString("  " + item + "\n")
 		}
 	}
-	sb.WriteString("\n" + StyleDim.Render("[←/→] Change value  [Enter/Esc] Back"))
+	sb.WriteString("\n" + StyleDim.Render(i18n.T("[←/→] Change value  [Enter/Esc] Back")))
 	return StyleInfoPanel.Width(m.Width - 4).Height(m.Height - 2).Render(sb.String())
 }
 
@@ -119,10 +120,10 @@ func (m Model) renderHeader() string {
 			goldPT += c.GoldYield(m.Game.Map.GetTile(c.X, c.Y))
 		}
 	}
-	text := fmt.Sprintf("Turn: %d  Gold: %d (+%d)  Sci: %d  %s",
-		m.Game.Turn, gold, goldPT, sci, playerCiv.Name)
+	text := i18n.Tf("Turn: %d  Gold: %d (+%d)  Sci: %d  %s",
+		m.Game.Turn, gold, goldPT, sci, i18n.T(playerCiv.Name))
 	if m.RangeMode {
-		text += "  [RANGED MODE - Enter to fire, Esc to cancel]"
+		text += i18n.T("  [RANGED MODE - Enter to fire, Esc to cancel]")
 	}
 	return StyleHeader.Width(m.Width).Render(text)
 }
@@ -257,20 +258,20 @@ func (m Model) renderInfo() string {
 	var sb strings.Builder
 	w := m.InfoWidth - 4
 
-	sb.WriteString(StyleSectionTitle.Render("SELECTED UNIT") + "\n")
+	sb.WriteString(StyleSectionTitle.Render(i18n.T("SELECTED UNIT")) + "\n")
 	if m.SelectedUnit != nil && m.SelectedUnit.IsAlive() {
 		u := m.SelectedUnit
 		stats := model.UnitDefs[u.Type]
-		sb.WriteString(fmt.Sprintf("%s (HP %d/%d)\n", stats.Name, u.HP, u.MaxHP))
-		sb.WriteString(fmt.Sprintf("Move: %d/%d  XP: %d  Lv: %d\n", u.MovesLeft, u.MaxMoves, u.XP, u.Level))
-		sb.WriteString(fmt.Sprintf("Atk: %d  Def: %d\n", u.Attack, u.Defense))
-		sb.WriteString(fmt.Sprintf("Pos: (%d, %d)\n", u.X, u.Y))
+		sb.WriteString(fmt.Sprintf("%s (HP %d/%d)\n", i18n.T(stats.Name), u.HP, u.MaxHP))
+		sb.WriteString(i18n.Tf("Move: %d/%d  XP: %d  Lv: %d", u.MovesLeft, u.MaxMoves, u.XP, u.Level) + "\n")
+		sb.WriteString(i18n.Tf("Atk: %d  Def: %d", u.Attack, u.Defense) + "\n")
+		sb.WriteString(i18n.Tf("Pos: (%d, %d)", u.X, u.Y) + "\n")
 		tile := m.Game.Map.GetTile(u.X, u.Y)
 		if tile != nil {
 			t := model.Terrains[tile.Terrain]
-			sb.WriteString(fmt.Sprintf("Terrain: %s\n", t.Name))
+			sb.WriteString(i18n.Tf("Terrain: %s", i18n.T(t.Name)) + "\n")
 			if t.DefenseBonus > 0 {
-				sb.WriteString(fmt.Sprintf("Defense bonus: +%d%%\n", t.DefenseBonus))
+				sb.WriteString(i18n.Tf("Defense bonus: +%d%%", t.DefenseBonus) + "\n")
 			}
 		}
 		// Show terrain info at cursor if cursor is not on unit
@@ -278,62 +279,62 @@ func (m Model) renderInfo() string {
 			curTile := m.Game.Map.GetTile(m.CursorX, m.CursorY)
 			if curTile != nil && curTile.Revealed {
 				ct := model.Terrains[curTile.Terrain]
-				sb.WriteString(fmt.Sprintf("Cursor: %s (cost %d)\n", ct.Name, ct.MoveCost))
+				sb.WriteString(i18n.Tf("Cursor: %s (cost %d)", i18n.T(ct.Name), ct.MoveCost) + "\n")
 			}
 		}
 	} else {
 		tile := m.Game.Map.GetTile(m.CursorX, m.CursorY)
-		sb.WriteString(fmt.Sprintf("Cursor: (%d, %d)\n", m.CursorX, m.CursorY))
+		sb.WriteString(i18n.Tf("Cursor: (%d, %d)", m.CursorX, m.CursorY) + "\n")
 		if tile != nil && tile.Revealed {
 			t := model.Terrains[tile.Terrain]
-			sb.WriteString(fmt.Sprintf("Terrain: %s\n", t.Name))
-			sb.WriteString(fmt.Sprintf("Yields: F%d P%d G%d\n", t.Food, t.Production, t.Gold))
+			sb.WriteString(i18n.Tf("Terrain: %s", i18n.T(t.Name)) + "\n")
+			sb.WriteString(i18n.Tf("Yields: F%d P%d G%d", t.Food, t.Production, t.Gold) + "\n")
 		} else {
-			sb.WriteString("Unexplored\n")
+			sb.WriteString(i18n.T("Unexplored") + "\n")
 		}
 		city := m.Game.GetCityAt(m.CursorX, m.CursorY)
 		if city != nil {
-			sb.WriteString(fmt.Sprintf("City: %s\n", city.Name))
-			sb.WriteString(fmt.Sprintf("Pop: %d  HP: %d/%d\n", city.Population, city.HP, city.MaxHP))
+			sb.WriteString(i18n.Tf("City: %s", city.Name) + "\n")
+			sb.WriteString(i18n.Tf("Pop: %d  HP: %d/%d", city.Population, city.HP, city.MaxHP) + "\n")
 		}
 	}
 
 	sb.WriteString(StyleDim.Render(strings.Repeat("─", w)) + "\n")
-	sb.WriteString(StyleSectionTitle.Render("ACTIONS") + "\n")
+	sb.WriteString(StyleSectionTitle.Render(i18n.T("ACTIONS")) + "\n")
 	if m.SelectedUnit != nil {
 		switch m.SelectedUnit.Type {
 		case model.UnitSettler:
-			sb.WriteString("[F] Found City\n")
+			sb.WriteString(i18n.T("[F] Found City") + "\n")
 		case model.UnitWorker:
-			sb.WriteString("[I] Build Improvement\n")
+			sb.WriteString(i18n.T("[I] Build Improvement") + "\n")
 		default:
 			if model.UnitDefs[m.SelectedUnit.Type].Range > 0 {
-				sb.WriteString("[R] Ranged Attack\n")
+				sb.WriteString(i18n.T("[R] Ranged Attack") + "\n")
 			}
 		}
 	}
-	sb.WriteString("[W] Wait/Skip\n")
-	sb.WriteString("[N] Next Unit\n")
-	sb.WriteString("[B] Build Menu\n")
-	sb.WriteString("[T] Tech Menu\n")
-	sb.WriteString("[D] Diplomacy\n")
-	sb.WriteString("[S] Save Game\n")
-	sb.WriteString("[V] Inspect Tile\n")
-	sb.WriteString("[Enter] End Turn\n")
-	sb.WriteString("[?] Help\n")
+	sb.WriteString(i18n.T("[W] Wait/Skip") + "\n")
+	sb.WriteString(i18n.T("[N] Next Unit") + "\n")
+	sb.WriteString(i18n.T("[B] Build Menu") + "\n")
+	sb.WriteString(i18n.T("[T] Tech Menu") + "\n")
+	sb.WriteString(i18n.T("[D] Diplomacy") + "\n")
+	sb.WriteString(i18n.T("[S] Save Game") + "\n")
+	sb.WriteString(i18n.T("[V] Inspect Tile") + "\n")
+	sb.WriteString(i18n.T("[Enter] End Turn") + "\n")
+	sb.WriteString(i18n.T("[?] Help") + "\n")
 
 	sb.WriteString(StyleDim.Render(strings.Repeat("─", w)) + "\n")
-	sb.WriteString(StyleSectionTitle.Render("RESEARCH") + "\n")
+	sb.WriteString(StyleSectionTitle.Render(i18n.T("RESEARCH")) + "\n")
 	playerCiv := m.Game.GetCiv(1)
 	if playerCiv != nil {
 		if playerCiv.Researching != "" {
 			tech := model.GetTech(playerCiv.Researching)
-			sb.WriteString(fmt.Sprintf("Researching: %s\n", playerCiv.Researching))
+			sb.WriteString(i18n.Tf("Researching: %s", i18n.T(playerCiv.Researching)) + "\n")
 			if tech != nil {
-				sb.WriteString(fmt.Sprintf("Progress: %d/%d\n", playerCiv.ResearchProgress, tech.Cost))
+				sb.WriteString(i18n.Tf("Progress: %d/%d", playerCiv.ResearchProgress, tech.Cost) + "\n")
 			}
 		} else {
-			sb.WriteString(StyleYellow.Render("Press [T] to research\n"))
+			sb.WriteString(StyleYellow.Render(i18n.T("Press [T] to research")) + "\n")
 		}
 		done := 0
 		for _, t := range model.AllTechs {
@@ -341,11 +342,11 @@ func (m Model) renderInfo() string {
 				done++
 			}
 		}
-		sb.WriteString(fmt.Sprintf("Techs: %d/%d\n", done, len(model.AllTechs)))
+		sb.WriteString(i18n.Tf("Techs: %d/%d", done, len(model.AllTechs)) + "\n")
 	}
 
 	sb.WriteString(StyleDim.Render(strings.Repeat("─", w)) + "\n")
-	sb.WriteString(StyleSectionTitle.Render("MINIMAP") + "\n")
+	sb.WriteString(StyleSectionTitle.Render(i18n.T("MINIMAP")) + "\n")
 	sb.WriteString(m.renderMinimap())
 
 	mapH := m.mapViewH()
@@ -423,7 +424,7 @@ func (m Model) renderMessages() string {
 		start = 0
 	}
 	msgs = msgs[start:]
-	sb.WriteString(StyleSectionTitle.Render("Messages:") + "\n")
+	sb.WriteString(StyleSectionTitle.Render(i18n.T("Messages:")) + "\n")
 	for _, msg := range msgs {
 		if len(msg) > m.Width-6 {
 			msg = msg[:m.Width-6]
@@ -449,27 +450,27 @@ func (m Model) renderMenu() string {
 	case MenuBuild:
 		city := m.Game.GetCityAt(m.CursorX, m.CursorY)
 		items := buildMenuItems(city, civTechs)
-		sb.WriteString(StyleSectionTitle.Render("BUILD MENU") + "\n")
+		sb.WriteString(StyleSectionTitle.Render(i18n.T("BUILD MENU")) + "\n")
 		for i, item := range items {
-			line := fmt.Sprintf("%s (cost %d)", item.Name, item.Cost)
+			line := i18n.Tf("%s (cost %d)", i18n.T(item.Name), item.Cost)
 			if i == m.MenuCursor {
 				sb.WriteString(StyleSelectedUnit.Render("> "+line) + "\n")
 			} else {
 				sb.WriteString("  " + line + "\n")
 			}
 		}
-		sb.WriteString(StyleDim.Render("[Enter]=select  [Esc]=cancel"))
+		sb.WriteString(StyleDim.Render(i18n.T("[Enter]=select  [Esc]=cancel")))
 	case MenuTech:
-		sb.WriteString(StyleSectionTitle.Render("TECH MENU") + "\n")
+		sb.WriteString(StyleSectionTitle.Render(i18n.T("TECH MENU")) + "\n")
 		if playerCiv != nil {
 			available := model.AvailableTechs(playerCiv.Techs)
 			if len(available) == 0 {
-				sb.WriteString("No techs available\n")
+				sb.WriteString(i18n.T("No techs available") + "\n")
 			}
 			for i, t := range available {
 				// Show what this tech unlocks
 				unlocks := techUnlocks(t.Name)
-				line := fmt.Sprintf("%s (cost %d)%s", t.Name, t.Cost, unlocks)
+				line := i18n.Tf("%s (cost %d)", i18n.T(t.Name), t.Cost) + unlocks
 				if i == m.MenuCursor {
 					sb.WriteString(StyleSelectedUnit.Render("> "+line) + "\n")
 				} else {
@@ -477,7 +478,7 @@ func (m Model) renderMenu() string {
 				}
 			}
 		}
-		sb.WriteString(StyleDim.Render("[Enter]=select  [Esc]=cancel"))
+		sb.WriteString(StyleDim.Render(i18n.T("[Enter]=select  [Esc]=cancel")))
 	}
 	return sb.String()
 }
@@ -486,12 +487,12 @@ func techUnlocks(techName string) string {
 	var unlocks []string
 	for _, ud := range model.UnitDefs {
 		if ud.RequiresTech == techName {
-			unlocks = append(unlocks, ud.Name)
+			unlocks = append(unlocks, i18n.T(ud.Name))
 		}
 	}
 	for _, bd := range model.BuildingDefs {
 		if bd.RequiresTech == techName {
-			unlocks = append(unlocks, bd.Name)
+			unlocks = append(unlocks, i18n.T(bd.Name))
 		}
 	}
 	if len(unlocks) == 0 {
@@ -505,57 +506,57 @@ func (m Model) renderCityDetails(city *model.City) string {
 		return ""
 	}
 	var sb strings.Builder
-	sb.WriteString(StyleSectionTitle.Render("CITY: "+city.Name) + "\n\n")
-	sb.WriteString(fmt.Sprintf("Population: %d  HP: %d/%d\n", city.Population, city.HP, city.MaxHP))
-	sb.WriteString(fmt.Sprintf("Food: %d/%d  Production: %d\n",
-		city.Food, city.FoodNeeded, city.Production))
+	sb.WriteString(StyleSectionTitle.Render(i18n.Tf("CITY: %s", city.Name)) + "\n\n")
+	sb.WriteString(i18n.Tf("Population: %d  HP: %d/%d", city.Population, city.HP, city.MaxHP) + "\n")
+	sb.WriteString(i18n.Tf("Food: %d/%d  Production: %d",
+		city.Food, city.FoodNeeded, city.Production) + "\n")
 	tile := m.Game.Map.GetTile(city.X, city.Y)
-	sb.WriteString(fmt.Sprintf("Yields: Food %d  Prod %d  Gold %d  Sci %d\n",
+	sb.WriteString(i18n.Tf("Yields: Food %d  Prod %d  Gold %d  Sci %d",
 		city.FoodYield(tile),
 		city.ProductionYield(tile),
 		city.GoldYield(tile),
-		city.ScienceYield()))
-	sb.WriteString("\nBuildings:\n")
+		city.ScienceYield()) + "\n")
+	sb.WriteString("\n" + i18n.T("Buildings:") + "\n")
 	if len(city.Buildings) == 0 {
-		sb.WriteString("  (none)\n")
+		sb.WriteString("  " + i18n.T("(none)") + "\n")
 	}
 	for bt := range city.Buildings {
-		sb.WriteString("  " + model.BuildingDefs[bt].Name + "\n")
+		sb.WriteString("  " + i18n.T(model.BuildingDefs[bt].Name) + "\n")
 	}
-	sb.WriteString("\nProduction Queue:\n")
+	sb.WriteString("\n" + i18n.T("Production Queue:") + "\n")
 	if len(city.ProductionQ) == 0 {
-		sb.WriteString("  (empty)\n")
+		sb.WriteString("  " + i18n.T("(empty)") + "\n")
 	}
 	for i, item := range city.ProductionQ {
 		marker := "  "
 		if i == 0 {
 			marker = "→ "
 		}
-		sb.WriteString(fmt.Sprintf("%s%s (%d/%d)\n", marker, item.Name, city.Production, item.Cost))
+		sb.WriteString(fmt.Sprintf("%s%s (%d/%d)\n", marker, i18n.T(item.Name), city.Production, item.Cost))
 	}
-	sb.WriteString("\n" + StyleDim.Render("[Enter/Esc] Close"))
+	sb.WriteString("\n" + StyleDim.Render(i18n.T("[Enter/Esc] Close")))
 	return sb.String()
 }
 
 func (m Model) renderDiplomacy() string {
 	var sb strings.Builder
-	sb.WriteString(StyleSectionTitle.Render("DIPLOMACY") + "\n\n")
+	sb.WriteString(StyleSectionTitle.Render(i18n.T("DIPLOMACY")) + "\n\n")
 	civs := m.diplomacyCivs()
 	if len(civs) == 0 {
-		sb.WriteString("No other civilizations\n")
+		sb.WriteString(i18n.T("No other civilizations") + "\n")
 	}
 	for i, c := range civs {
 		rel := m.Game.GetRelation(1, c.ID)
-		relStr := "Peace"
+		relStr := i18n.T("Peace")
 		relStyle := StyleGreen
 		if rel == model.RelationWar {
-			relStr = "War"
+			relStr = i18n.T("War")
 			relStyle = StyleRed
 		}
-		line := fmt.Sprintf("%s: %s", c.Name, relStr)
-		action := " [Enter=declare war]"
+		line := fmt.Sprintf("%s: %s", i18n.T(c.Name), relStr)
+		action := i18n.T(" [Enter=declare war]")
 		if rel == model.RelationWar {
-			action = " [Enter=make peace]"
+			action = i18n.T(" [Enter=make peace]")
 		}
 		if i == m.MenuCursor {
 			sb.WriteString(StyleSelectedUnit.Render("> "+line) + relStyle.Render(action) + "\n")
@@ -563,70 +564,23 @@ func (m Model) renderDiplomacy() string {
 			sb.WriteString("  " + line + "\n")
 		}
 	}
-	sb.WriteString("\n" + StyleDim.Render("[Enter]=toggle war/peace  [Esc]=close"))
+	sb.WriteString("\n" + StyleDim.Render(i18n.T("[Enter]=toggle war/peace  [Esc]=close")))
 	return sb.String()
 }
 
 func (m Model) renderHelp() string {
-	help := `
-CIV-TUI HELP
-============
-
-MOVEMENT:
-  Arrow keys / hjkl - Move cursor / selected unit
-  Green tiles show reachable positions
-
-UNIT ACTIONS:
-  F - Found City (Settler only)
-  W - Wait/Skip unit turn
-  N - Select next unit with moves
-  R - Ranged attack mode (Archers)
-  I - Build improvement (Worker)
-
-CITY ACTIONS:
-  B - Open build menu (when on city)
-  Enter (on own city, no unit) - City details
-
-INSPECT:
-  V - View tile details
-
-RESEARCH:
-  T - Open tech research menu
-
-DIPLOMACY:
-  D - Open diplomacy menu
-
-GAME:
-  S - Save game
-  Enter - End turn
-
-DISPLAY:
-  Blue units/cities = yours
-  Red units/cities = enemy
-  Green highlight = reachable tiles
-  Red highlight = ranged attack range
-  Dimmed = explored but not visible
-  Dark tiles = fog of war
-
-VICTORY:
-  Domination: eliminate all enemies
-  Science: research all technologies
-  200 turn limit
-
-Press ? or Esc to close help
-`
-	return StyleInfoPanel.Width(m.Width).Height(m.Height).Render(help)
+	return StyleInfoPanel.Width(m.Width).Height(m.Height).Render(i18n.HelpText())
 }
 
 func (m Model) renderGameOver() string {
 	var msg string
 	switch m.Game.State {
 	case game.StateVictory:
-		msg = StyleGreen.Render("VICTORY! Press Q to quit.")
+		msg = StyleGreen.Render(i18n.T("VICTORY! Press Q to quit."))
 	case game.StateDefeat:
-		msg = StyleRed.Render("DEFEAT! Press Q to quit.")
+		msg = StyleRed.Render(i18n.T("DEFEAT! Press Q to quit."))
 	case game.StateDraw:
-		msg = StyleYellow.Render("DRAW - Turn limit reached! Press Q to quit.")
+		msg = StyleYellow.Render(i18n.T("DRAW - Turn limit reached! Press Q to quit."))
 	}
 	return StyleBold.Render(msg)
 }
@@ -638,38 +592,38 @@ func (m Model) renderAsPopup(content string, width int) string {
 
 func (m Model) renderInspect() string {
 	var sb strings.Builder
-	sb.WriteString(StyleSectionTitle.Render("TILE INSPECT") + "\n\n")
+	sb.WriteString(StyleSectionTitle.Render(i18n.T("TILE INSPECT")) + "\n\n")
 
 	tile := m.Game.Map.GetTile(m.CursorX, m.CursorY)
-	sb.WriteString(fmt.Sprintf("Position: (%d, %d)\n", m.CursorX, m.CursorY))
+	sb.WriteString(i18n.Tf("Position: (%d, %d)", m.CursorX, m.CursorY) + "\n")
 
 	if tile == nil || !tile.Revealed {
-		sb.WriteString("\n" + StyleDim.Render("Unexplored territory") + "\n")
-		sb.WriteString("\n" + StyleDim.Render("[Esc/V] Close"))
+		sb.WriteString("\n" + StyleDim.Render(i18n.T("Unexplored territory")) + "\n")
+		sb.WriteString("\n" + StyleDim.Render(i18n.T("[Esc/V] Close")))
 		return sb.String()
 	}
 
 	// Terrain
 	terrain := model.Terrains[tile.Terrain]
-	sb.WriteString("\n" + StyleBold.Render("Terrain") + "\n")
+	sb.WriteString("\n" + StyleBold.Render(i18n.T("Terrain")) + "\n")
 	tStyle := terrainStyle(tile.Terrain)
-	sb.WriteString(fmt.Sprintf("  %s %s\n", tStyle.Render(terrain.Symbol), terrain.Name))
-	sb.WriteString(fmt.Sprintf("  Food: %d  Prod: %d  Gold: %d\n", terrain.Food, terrain.Production, terrain.Gold))
-	sb.WriteString(fmt.Sprintf("  Move Cost: %d", terrain.MoveCost))
+	sb.WriteString(fmt.Sprintf("  %s %s\n", tStyle.Render(terrain.Symbol), i18n.T(terrain.Name)))
+	sb.WriteString(i18n.Tf("  Food: %d  Prod: %d  Gold: %d", terrain.Food, terrain.Production, terrain.Gold) + "\n")
+	sb.WriteString(i18n.Tf("  Move Cost: %d", terrain.MoveCost))
 	if terrain.DefenseBonus > 0 {
-		sb.WriteString(fmt.Sprintf("  Defense: +%d%%", terrain.DefenseBonus))
+		sb.WriteString(i18n.Tf("  Defense: +%d%%", terrain.DefenseBonus))
 	}
 	if !terrain.Passable {
-		sb.WriteString("  " + StyleRed.Render("Impassable"))
+		sb.WriteString("  " + StyleRed.Render(i18n.T("Impassable")))
 	}
 	sb.WriteString("\n")
 
 	// Improvement
 	if tile.Improvement != model.ImprovementNone {
 		imp := model.Improvements[tile.Improvement]
-		sb.WriteString("\n" + StyleBold.Render("Improvement") + "\n")
-		sb.WriteString(fmt.Sprintf("  %s\n", imp.Name))
-		sb.WriteString(fmt.Sprintf("  Food +%d  Prod +%d  Gold +%d\n", imp.FoodBonus, imp.ProdBonus, imp.GoldBonus))
+		sb.WriteString("\n" + StyleBold.Render(i18n.T("Improvement")) + "\n")
+		sb.WriteString("  " + i18n.T(imp.Name) + "\n")
+		sb.WriteString(i18n.Tf("  Food +%d  Prod +%d  Gold +%d", imp.FoodBonus, imp.ProdBonus, imp.GoldBonus) + "\n")
 	}
 
 	// Unit
@@ -679,18 +633,18 @@ func (m Model) renderInspect() string {
 		civ := m.Game.GetCiv(unit.CivID)
 		owner := ""
 		if civ != nil {
-			owner = " - " + civ.Name
+			owner = " - " + i18n.T(civ.Name)
 		}
-		sb.WriteString("\n" + StyleBold.Render("Unit") + "\n")
-		sb.WriteString(fmt.Sprintf("  %s (%s%s)\n", stats.Name, stats.Symbol, owner))
-		sb.WriteString(fmt.Sprintf("  HP: %d/%d  Move: %d/%d\n", unit.HP, unit.MaxHP, unit.MovesLeft, unit.MaxMoves))
-		sb.WriteString(fmt.Sprintf("  Atk: %d  Def: %d  XP: %d  Lv: %d\n", unit.Attack, unit.Defense, unit.XP, unit.Level))
+		sb.WriteString("\n" + StyleBold.Render(i18n.T("Unit")) + "\n")
+		sb.WriteString(fmt.Sprintf("  %s (%s%s)\n", i18n.T(stats.Name), stats.Symbol, owner))
+		sb.WriteString(i18n.Tf("  HP: %d/%d  Move: %d/%d", unit.HP, unit.MaxHP, unit.MovesLeft, unit.MaxMoves) + "\n")
+		sb.WriteString(i18n.Tf("  Atk: %d  Def: %d  XP: %d  Lv: %d", unit.Attack, unit.Defense, unit.XP, unit.Level) + "\n")
 		if stats.Range > 0 {
-			sb.WriteString(fmt.Sprintf("  Range: %d\n", stats.Range))
+			sb.WriteString(i18n.Tf("  Range: %d", stats.Range) + "\n")
 		}
 		if unit.BuildingImprovement != model.ImprovementNone {
-			impName := model.Improvements[unit.BuildingImprovement].Name
-			sb.WriteString(fmt.Sprintf("  Building: %s (%d turns left)\n", impName, unit.ImprovementTurnsLeft))
+			impName := i18n.T(model.Improvements[unit.BuildingImprovement].Name)
+			sb.WriteString(i18n.Tf("  Building: %s (%d turns left)", impName, unit.ImprovementTurnsLeft) + "\n")
 		}
 	}
 
@@ -700,22 +654,22 @@ func (m Model) renderInspect() string {
 		civ := m.Game.GetCiv(city.CivID)
 		owner := ""
 		if civ != nil {
-			owner = " - " + civ.Name
+			owner = " - " + i18n.T(civ.Name)
 		}
-		sb.WriteString("\n" + StyleBold.Render("City") + "\n")
+		sb.WriteString("\n" + StyleBold.Render(i18n.T("City")) + "\n")
 		sb.WriteString(fmt.Sprintf("  %s%s\n", city.Name, owner))
-		sb.WriteString(fmt.Sprintf("  Pop: %d  HP: %d/%d  Def: %d\n", city.Population, city.HP, city.MaxHP, city.Defense))
+		sb.WriteString(i18n.Tf("  Pop: %d  HP: %d/%d  Def: %d", city.Population, city.HP, city.MaxHP, city.Defense) + "\n")
 		if city.CivID == 1 || tile.Visible {
-			sb.WriteString(fmt.Sprintf("  Food: %d  Prod: %d  Gold: %d  Sci: %d\n",
-				city.FoodYield(tile), city.ProductionYield(tile), city.GoldYield(tile), city.ScienceYield()))
+			sb.WriteString(i18n.Tf("  Food: %d  Prod: %d  Gold: %d  Sci: %d",
+				city.FoodYield(tile), city.ProductionYield(tile), city.GoldYield(tile), city.ScienceYield()) + "\n")
 			if len(city.Buildings) > 0 {
-				sb.WriteString("  Buildings: ")
+				sb.WriteString(i18n.T("  Buildings: "))
 				first := true
 				for bt := range city.Buildings {
 					if !first {
 						sb.WriteString(", ")
 					}
-					sb.WriteString(model.BuildingDefs[bt].Name)
+					sb.WriteString(i18n.T(model.BuildingDefs[bt].Name))
 					first = false
 				}
 				sb.WriteString("\n")
@@ -724,11 +678,11 @@ func (m Model) renderInspect() string {
 	}
 
 	// Visibility
-	visibility := "Visible"
+	visibility := i18n.T("Visible")
 	if !tile.Visible {
-		visibility = "Revealed (not in sight)"
+		visibility = i18n.T("Revealed (not in sight)")
 	}
-	sb.WriteString("\n" + StyleDim.Render("Visibility: "+visibility))
-	sb.WriteString("\n" + StyleDim.Render("[Esc/V] Close"))
+	sb.WriteString("\n" + StyleDim.Render(i18n.T("Visibility: ")+visibility))
+	sb.WriteString("\n" + StyleDim.Render(i18n.T("[Esc/V] Close")))
 	return sb.String()
 }
