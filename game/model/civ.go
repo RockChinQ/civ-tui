@@ -1,4 +1,11 @@
-package game
+package model
+
+type RelationType int
+
+const (
+	RelationPeace RelationType = 0
+	RelationWar   RelationType = 1
+)
 
 type Civ struct {
 	ID               int
@@ -12,17 +19,20 @@ type Civ struct {
 	ResearchProgress int
 	IsPlayer         bool
 	IsAlive          bool
+	Relations        map[int]RelationType
+	CityNames        []string
 }
 
 func NewCiv(id int, name string, isPlayer bool) *Civ {
 	return &Civ{
-		ID:       id,
-		Name:     name,
-		Gold:     10,
-		Science:  0,
-		Techs:    make(map[string]bool),
-		IsPlayer: isPlayer,
-		IsAlive:  true,
+		ID:        id,
+		Name:      name,
+		Gold:      InitialGold,
+		Science:   0,
+		Techs:     make(map[string]bool),
+		IsPlayer:  isPlayer,
+		IsAlive:   true,
+		Relations: make(map[int]RelationType),
 	}
 }
 

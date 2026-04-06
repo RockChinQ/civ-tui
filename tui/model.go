@@ -2,7 +2,16 @@ package tui
 
 import (
 	"github.com/RockChinQ/civ-tui/game"
+	"github.com/RockChinQ/civ-tui/game/model"
+	"github.com/RockChinQ/civ-tui/game/worldmap"
 	tea "github.com/charmbracelet/bubbletea"
+)
+
+type Screen int
+
+const (
+	ScreenMainMenu Screen = iota
+	ScreenGame
 )
 
 type MenuType int
@@ -12,35 +21,61 @@ const (
 	MenuBuild
 	MenuTech
 	MenuHelp
+	MenuCity
+	MenuRanged
+	MenuDiplomacy
+	MenuPromotion
 )
 
 type Model struct {
-	Game         *game.Game
-	CursorX      int
-	CursorY      int
-	ViewportX    int
-	ViewportY    int
-	SelectedUnit *game.Unit
-	ActiveMenu   MenuType
-	MenuCursor   int
-	Width        int
-	Height       int
-	MapWidth     int
-	MapHeight    int
-	InfoWidth    int
-	MsgHeight    int
+	Game               *game.Game
+	CursorX            int
+	CursorY            int
+	ViewportX          int
+	ViewportY          int
+	SelectedUnit       *model.Unit
+	ActiveMenu         MenuType
+	MenuCursor         int
+	Width              int
+	Height             int
+	MapWidth           int
+	MapHeight          int
+	InfoWidth          int
+	MsgHeight          int
+	CurrentScreen      Screen
+	MainMenuCursor     int
+	InSettings         bool
+	SettingsCursor     int
+	SettingsMapSize    worldmap.MapSize
+	SettingsNumAICivs  int
+	SettingsDifficulty int
+	RangeMode          bool
+	PendingPromotion   *model.Unit
 }
 
 func NewModel() Model {
-	g := game.NewGame()
 	m := Model{
-		Game:      g,
-		Width:     120,
-		Height:    35,
-		InfoWidth: 28,
-		MsgHeight: 6,
+		Width:              120,
+		Height:             35,
+		InfoWidth:          28,
+		MsgHeight:          6,
+		CurrentScreen:      ScreenMainMenu,
+		SettingsMapSize:    worldmap.MapSizeMedium,
+		SettingsNumAICivs:  1,
+		SettingsDifficulty: 1,
 	}
-	// Start cursor at first player unit
+	return m
+}
+
+func (m *Model) startGame() {
+	opts := game.GameOptions{
+		NumAICivs:  m.SettingsNumAICivs,
+		MapSize:    m.SettingsMapSize,
+		Difficulty: m.SettingsDifficulty,
+	}
+	g := game.NewGame(opts)
+	m.Game = g
+	m.CurrentScreen = ScreenGame
 	for _, u := range g.Units {
 		if u.CivID == 1 && u.IsAlive() {
 			m.CursorX = u.X
@@ -50,7 +85,6 @@ func NewModel() Model {
 		}
 	}
 	m.centerViewport()
-	return m
 }
 
 func (m *Model) centerViewport() {
@@ -62,8 +96,9 @@ func (m *Model) centerViewport() {
 
 func (m *Model) clampViewport() {
 	mapW, mapH := m.mapViewSize()
-	maxVX := game.MapWidth - mapW
-	maxVY := game.MapHeight - mapH
+	mw, mh := m.gameMapSize()
+	maxVX := mw - mapW
+	maxVY := mh - mapH
 	if maxVX < 0 {
 		maxVX = 0
 	}
@@ -84,12 +119,18 @@ func (m *Model) clampViewport() {
 	}
 }
 
+func (m *Model) gameMapSize() (int, int) {
+	if m.Game != nil {
+		return m.Game.Map.Width, m.Game.Map.Height
+	}
+	return worldmap.MapWidth, worldmap.MapHeight
+}
+
 func (m *Model) mapViewSize() (int, int) {
-	// Each cell is 2 chars wide
 	headerH := 1
-	msgH := m.MsgHeight + 2 // border
-	availH := m.Height - headerH - msgH - 2 // 2 for map borders
-	availW := (m.Width - m.InfoWidth - 2) / 2 // 2 chars per cell, minus border
+	msgH := m.MsgHeight + 2
+	availH := m.Height - headerH - msgH - 2
+	availW := (m.Width - m.InfoWidth - 2) / 2
 
 	if availW < 5 {
 		availW = 5
@@ -97,11 +138,12 @@ func (m *Model) mapViewSize() (int, int) {
 	if availH < 5 {
 		availH = 5
 	}
-	if availW > game.MapWidth {
-		availW = game.MapWidth
+	mw, mh := m.gameMapSize()
+	if availW > mw {
+		availW = mw
 	}
-	if availH > game.MapHeight {
-		availH = game.MapHeight
+	if availH > mh {
+		availH = mh
 	}
 	return availW, availH
 }
