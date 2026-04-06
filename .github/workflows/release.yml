@@ -25,13 +25,7 @@ jobs:
           - goos: windows
             goarch: amd64
           - goos: windows
-            goarch: arm64
-          - goos: windows
             goarch: 386
-          - goos: freebsd
-            goarch: amd64
-          - goos: freebsd
-            goarch: arm64
     steps:
       - uses: actions/checkout@v4
 
@@ -43,13 +37,15 @@ jobs:
         env:
           GOOS: ${{ matrix.goos }}
           GOARCH: ${{ matrix.goarch }}
+          CGO_ENABLED: 0
         run: |
+          set -euxo pipefail
           EXT=""
           if [ "$GOOS" = "windows" ]; then EXT=".exe"; fi
           OUTPUT="civ-tui-${GOOS}-${GOARCH}${EXT}"
           go build -ldflags="-s -w" -o "${OUTPUT}" .
           if [ "$GOOS" != "windows" ]; then
-            tar czf "${OUTPUT%.exe}.tar.gz" "${OUTPUT}"
+            tar czf "${OUTPUT}.tar.gz" "${OUTPUT}"
           else
             zip "${OUTPUT%.exe}.zip" "${OUTPUT}"
           fi
@@ -58,7 +54,9 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          set -euxo pipefail
           TAG="${{ github.event.release.tag_name }}"
-          for f in *.tar.gz *.zip; do
-            [ -f "$f" ] && gh release upload "$TAG" "$f" --clobber
-          done
+          shopt -s nullglob
+          files=( *.tar.gz *.zip )
+          [ ${#files[@]} -gt 0 ] || { echo "No release artifacts found"; exit 1; }
+          gh release upload "$TAG" "${files[@]}" --clobber
