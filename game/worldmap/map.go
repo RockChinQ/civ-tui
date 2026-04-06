@@ -14,7 +14,7 @@ const (
 type MapSize int
 
 const (
-	MapSizeSmall  MapSize = iota
+	MapSizeSmall MapSize = iota
 	MapSizeMedium
 	MapSizeLarge
 )

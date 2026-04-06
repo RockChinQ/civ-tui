@@ -6,24 +6,24 @@ var (
 	StyleBase = lipgloss.NewStyle()
 
 	StyleHeader = lipgloss.NewStyle().
-		Background(lipgloss.Color("236")).
-		Foreground(lipgloss.Color("255")).
-		Bold(true).
-		Padding(0, 1)
+			Background(lipgloss.Color("236")).
+			Foreground(lipgloss.Color("255")).
+			Bold(true).
+			Padding(0, 1)
 
 	StyleMapBorder = lipgloss.NewStyle().
-		Border(lipgloss.NormalBorder()).
-		BorderForeground(lipgloss.Color("240"))
+			Border(lipgloss.NormalBorder()).
+			BorderForeground(lipgloss.Color("240"))
 
 	StyleInfoPanel = lipgloss.NewStyle().
-		Border(lipgloss.NormalBorder()).
-		BorderForeground(lipgloss.Color("240")).
-		Padding(0, 1)
+			Border(lipgloss.NormalBorder()).
+			BorderForeground(lipgloss.Color("240")).
+			Padding(0, 1)
 
 	StyleMsgPanel = lipgloss.NewStyle().
-		Border(lipgloss.NormalBorder()).
-		BorderForeground(lipgloss.Color("240")).
-		Padding(0, 1)
+			Border(lipgloss.NormalBorder()).
+			BorderForeground(lipgloss.Color("240")).
+			Padding(0, 1)
 
 	// Terrain colors
 	StyleOcean     = lipgloss.NewStyle().Foreground(lipgloss.Color("27"))
@@ -54,5 +54,5 @@ var (
 )
 
 var (
-StyleRangeHighlight = lipgloss.NewStyle().Background(lipgloss.Color("52")).Foreground(lipgloss.Color("255"))
+	StyleRangeHighlight = lipgloss.NewStyle().Background(lipgloss.Color("52")).Foreground(lipgloss.Color("255"))
 )
