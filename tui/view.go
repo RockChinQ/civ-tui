@@ -23,11 +23,19 @@ func (m Model) View() string {
 		if m.InNewGame {
 			return m.renderNewGame()
 		}
+		if m.InLoadGame {
+			return m.renderLoadGame()
+		}
 		return m.renderMainMenu()
 	}
 
 	if m.Game == nil {
 		return i18n.T("Loading game...")
+	}
+
+	// Save game slot picker overlay
+	if m.InSaveGame {
+		return m.renderSaveGame()
 	}
 
 	if m.ActiveMenu == MenuHelp {
@@ -311,4 +319,61 @@ func terrainStyle(t model.TerrainType) lipgloss.Style {
 func (m Model) mapViewH() int {
 	_, h := m.mapViewSize()
 	return h + mapLabelH
+}
+
+func (m Model) renderLoadGame() string {
+	var sb strings.Builder
+	sb.WriteString(StyleSectionTitle.Render(i18n.T("LOAD GAME")) + "\n\n")
+
+	saves := m.LoadGameSaves
+	if len(saves) == 0 {
+		sb.WriteString(i18n.T("No saves found") + "\n\n")
+		sb.WriteString(StyleSelectedUnit.Render("> "+i18n.T("Back")) + "\n")
+	} else {
+		for i, s := range saves {
+			label := s.SlotLabel()
+			if i == m.LoadGameCursor {
+				sb.WriteString(StyleSelectedUnit.Render("> "+label) + "\n")
+			} else {
+				sb.WriteString("  " + label + "\n")
+			}
+		}
+		sb.WriteString("\n")
+		// Back item
+		backIdx := len(saves)
+		if m.LoadGameCursor == backIdx {
+			sb.WriteString(StyleSelectedUnit.Render("> "+i18n.T("Back")) + "\n")
+		} else {
+			sb.WriteString("  " + i18n.T("Back") + "\n")
+		}
+	}
+
+	sb.WriteString("\n" + StyleDim.Render(i18n.T("[Enter] Load  [D] Delete  [Esc] Back")))
+	return StyleInfoPanel.Width(m.Width - 4).Height(m.Height - 2).Render(sb.String())
+}
+
+func (m Model) renderSaveGame() string {
+	var sb strings.Builder
+	sb.WriteString(StyleSectionTitle.Render(i18n.T("SAVE GAME")) + "\n\n")
+
+	slots := m.SaveGameSlots
+	for i, s := range slots {
+		label := s.SlotLabel()
+		if i == m.SaveGameCursor {
+			sb.WriteString(StyleSelectedUnit.Render("> "+label) + "\n")
+		} else {
+			sb.WriteString("  " + label + "\n")
+		}
+	}
+	sb.WriteString("\n")
+	// Back item
+	backIdx := len(slots)
+	if m.SaveGameCursor == backIdx {
+		sb.WriteString(StyleSelectedUnit.Render("> "+i18n.T("Back")) + "\n")
+	} else {
+		sb.WriteString("  " + i18n.T("Back") + "\n")
+	}
+
+	sb.WriteString("\n" + StyleDim.Render(i18n.T("[Enter] Save  [Esc] Back")))
+	return StyleInfoPanel.Width(m.Width - 4).Height(m.Height - 2).Render(sb.String())
 }

@@ -49,6 +49,12 @@ type Model struct {
 	SettingsCursor     int
 	InNewGame          bool
 	NewGameCursor      int
+	InLoadGame         bool
+	LoadGameCursor     int
+	LoadGameSaves      []game.SaveInfo
+	InSaveGame         bool
+	SaveGameCursor     int
+	SaveGameSlots      []game.SaveInfo
 	SettingsMapSize    worldmap.MapSize
 	SettingsNumAICivs  int
 	SettingsDifficulty int

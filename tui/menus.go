@@ -115,6 +115,8 @@ func (m Model) handleDiplomacyMenu(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 				rel := m.Game.GetRelation(1, target.ID)
 				if rel == model.RelationWar {
 					m.Game.MakePeace(player, target)
+					player.SetPeaceTurn(target.ID, m.Game.Turn)
+					target.SetPeaceTurn(player.ID, m.Game.Turn)
 					m.Game.AddPlayerMessage(i18n.Tf("Made peace with %s", i18n.T(target.Name)))
 				} else {
 					m.Game.DeclareWar(player, target)

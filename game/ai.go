@@ -2,14 +2,19 @@ package game
 
 import (
 	"github.com/RockChinQ/civ-tui/game/model"
+	"github.com/RockChinQ/civ-tui/i18n"
 )
 
 // aiMinSettlerCityDistance is the minimum distance an AI settler requires
 // from any existing city before it will attempt to found a new one.
 const aiMinSettlerCityDistance = 4
 
-func (g *Game) RunAI() []string {
-	var msgs []string
+// aiPeaceCooldown is the number of turns after making peace before AI will
+// consider declaring war on the same civ again.
+const aiPeaceCooldown = 10
+
+func (g *Game) RunAI() []GameMessage {
+	var msgs []GameMessage
 	for _, civ := range g.Civs {
 		if civ.IsPlayer || !civ.IsAlive {
 			continue
@@ -19,8 +24,8 @@ func (g *Game) RunAI() []string {
 	return msgs
 }
 
-func (g *Game) runCivAI(civ *model.Civ) []string {
-	var msgs []string
+func (g *Game) runCivAI(civ *model.Civ) []GameMessage {
+	var msgs []GameMessage
 
 	// AI research: prefer techs that unlock units
 	if civ.Researching == "" {
@@ -40,7 +45,7 @@ func (g *Game) runCivAI(civ *model.Civ) []string {
 	}
 
 	// AI diplomacy
-	g.aiDiplomacy(civ)
+	msgs = append(msgs, g.aiDiplomacy(civ)...)
 
 	for _, u := range g.Units {
 		if u.CivID != civ.ID || !u.IsAlive() {
@@ -103,7 +108,9 @@ func (g *Game) runCivAI(civ *model.Civ) []string {
 	return msgs
 }
 
-func (g *Game) aiDiplomacy(civ *model.Civ) {
+func (g *Game) aiDiplomacy(civ *model.Civ) []GameMessage {
+	var msgs []GameMessage
+
 	myUnits := 0
 	for _, u := range g.Units {
 		if u.CivID == civ.ID && u.IsAlive() {
@@ -126,8 +133,21 @@ func (g *Game) aiDiplomacy(civ *model.Civ) {
 			// 5% chance to make peace if outnumbered
 			if myUnits < enemyUnits && g.Rand.Intn(100) < 5 {
 				g.MakePeace(civ, other)
+				civ.SetPeaceTurn(other.ID, g.Turn)
+				other.SetPeaceTurn(civ.ID, g.Turn)
+				isPlayer := other.ID == 1
+				msgs = append(msgs, GameMessage{
+					Text:     i18n.Tf("%s made peace with %s", i18n.T(civ.Name), i18n.T(other.Name)),
+					IsPlayer: isPlayer,
+				})
 			}
 		} else {
+			// Don't declare war if peace was made recently
+			if peaceTurn, ok := civ.GetPeaceTurn(other.ID); ok {
+				if g.Turn-peaceTurn < aiPeaceCooldown {
+					continue
+				}
+			}
 			enemyUnits := 0
 			for _, u := range g.Units {
 				if u.CivID == other.ID && u.IsAlive() {
@@ -137,12 +157,18 @@ func (g *Game) aiDiplomacy(civ *model.Civ) {
 			// 2% chance to declare war if we have more units
 			if myUnits > enemyUnits && g.Rand.Intn(100) < 2 {
 				g.DeclareWar(civ, other)
+				isPlayer := other.ID == 1
+				msgs = append(msgs, GameMessage{
+					Text:     i18n.Tf("%s declared war on %s!", i18n.T(civ.Name), i18n.T(other.Name)),
+					IsPlayer: isPlayer,
+				})
 			}
 		}
 	}
+	return msgs
 }
 
-func (g *Game) aiSettlerAction(civ *model.Civ, u *model.Unit, msgs *[]string) bool {
+func (g *Game) aiSettlerAction(civ *model.Civ, u *model.Unit, msgs *[]GameMessage) bool {
 	tooClose := false
 	for _, c := range g.Cities {
 		if abs(c.X-u.X)+abs(c.Y-u.Y) < aiMinSettlerCityDistance {
@@ -154,14 +180,14 @@ func (g *Game) aiSettlerAction(civ *model.Civ, u *model.Unit, msgs *[]string) bo
 	if !tooClose && t != nil && model.Terrains[t.Terrain].Passable {
 		msg, ok := g.FoundCity(u, nil)
 		if ok {
-			*msgs = append(*msgs, msg)
+			*msgs = append(*msgs, GameMessage{Text: msg})
 			return false
 		}
 	}
 	return g.aiMoveRandom(u)
 }
 
-func (g *Game) aiMilitaryAction(civ *model.Civ, u *model.Unit, msgs *[]string) bool {
+func (g *Game) aiMilitaryAction(civ *model.Civ, u *model.Unit, msgs *[]GameMessage) bool {
 	bestDist := 999
 	bestX, bestY := -1, -1
 
@@ -215,10 +241,20 @@ func (g *Game) aiMilitaryAction(civ *model.Civ, u *model.Unit, msgs *[]string) b
 	}
 
 	for _, d := range dirs {
+		// Check if target tile has a player unit/city (for message highlighting)
+		targetX, targetY := u.X+d[0], u.Y+d[1]
+		involvesPlayer := false
+		if tu := g.GetUnitAt(targetX, targetY); tu != nil && tu.CivID == 1 {
+			involvesPlayer = true
+		}
+		if tc := g.GetCityAt(targetX, targetY); tc != nil && tc.CivID == 1 {
+			involvesPlayer = true
+		}
+
 		msg, ok := g.MoveUnit(u, d[0], d[1])
 		if ok {
 			if msg != "" {
-				*msgs = append(*msgs, msg)
+				*msgs = append(*msgs, GameMessage{Text: msg, IsPlayer: involvesPlayer})
 			}
 			return true
 		}

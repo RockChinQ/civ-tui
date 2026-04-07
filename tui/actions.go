@@ -115,12 +115,9 @@ func (m Model) saveGame() (tea.Model, tea.Cmd) {
 	if m.Game == nil {
 		return m, nil
 	}
-	err := m.Game.SaveToFile(game.DefaultSavePath())
-	if err != nil {
-		m.Game.AddPlayerMessage(i18n.Tf("Failed to save: %s", err.Error()))
-	} else {
-		m.Game.AddPlayerMessage(i18n.T("Game saved!"))
-	}
+	m.InSaveGame = true
+	m.SaveGameCursor = 0
+	m.SaveGameSlots = game.ListSaves()
 	return m, nil
 }
 

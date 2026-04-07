@@ -11,6 +11,14 @@ var zhCN = map[string]string{
 	"Loading...":      "加载中...",
 	"Loading game...": "加载游戏中...",
 
+	// --- Load / Save game menus ---
+	"LOAD GAME":                            "加载存档",
+	"SAVE GAME":                            "保存游戏",
+	"No saves found":                       "没有找到存档",
+	"Delete":                               "删除",
+	"[Enter] Load  [D] Delete  [Esc] Back": "[Enter] 加载  [D] 删除  [Esc] 返回",
+	"[Enter] Save  [Esc] Back":             "[Enter] 保存  [Esc] 返回",
+
 	// --- Settings ---
 	"SETTINGS":     "设置",
 	"Language: %s": "语言: %s",
@@ -32,8 +40,8 @@ var zhCN = map[string]string{
 	"[←/→] Change value  [Enter] Select  [Esc] Back": "[←/→] 调整  [Enter] 选择  [Esc] 返回",
 
 	// --- Header ---
-	"Turn: %d  Gold: %d (+%d)  Sci: %d  %s":          "回合: %d  金币: %d (+%d)  科研: %d  %s",
-	"  [RANGED MODE - Enter to fire, Esc to cancel]":  "  [远程模式 - Enter 射击, Esc 取消]",
+	"Turn: %d  Gold: %d (+%d)  Sci: %d  %s":                                       "回合: %d  金币: %d (+%d)  科研: %d  %s",
+	"  [RANGED MODE - Enter to fire, Esc to cancel]":                              "  [远程模式 - Enter 射击, Esc 取消]",
 	"  [GOTO MODE - Move cursor to destination, Enter to confirm, Esc to cancel]": "  [前往模式 - 方向键移动光标, Enter 确认, Esc 取消]",
 
 	// --- Info panel: selected unit ---
@@ -140,16 +148,16 @@ var zhCN = map[string]string{
 	"Visibility: ":                            "可见性: ",
 
 	// --- Info panel: selected unit destination/status ---
-	"→ Dest: (%d, %d)":  "→ 目的地: (%d, %d)",
-	"★ Building: %s":    "★ 建造中: %s",
+	"→ Dest: (%d, %d)": "→ 目的地: (%d, %d)",
+	"★ Building: %s":   "★ 建造中: %s",
 
 	// --- Goto mode messages ---
-	"Set destination to (%d,%d)":                             "目的地已设为 (%d,%d)",
-	"Cannot set destination on impassable terrain":           "无法在不可通行地形设置目的地",
+	"Set destination to (%d,%d)":                                             "目的地已设为 (%d,%d)",
+	"Cannot set destination on impassable terrain":                           "无法在不可通行地形设置目的地",
 	"Goto mode: move cursor to destination, Enter to confirm, Esc to cancel": "前往模式: 方向键移动光标到目的地，Enter 确认，Esc 取消",
-	"Destination cancelled":                                  "目的地已取消",
-	"Unit %s cannot reach destination":                       "单位 %s 无法到达目的地",
-	"Unit %s arrived at (%d,%d)":                             "单位 %s 已到达 (%d,%d)",
+	"Destination cancelled":                                                  "目的地已取消",
+	"Unit %s cannot reach destination":                                       "单位 %s 无法到达目的地",
+	"Unit %s arrived at (%d,%d)":                                             "单位 %s 已到达 (%d,%d)",
 
 	// --- Action messages (update.go) ---
 	"This unit cannot perform ranged attacks":                                  "该单位无法进行远程攻击",
@@ -158,9 +166,12 @@ var zhCN = map[string]string{
 	"No enemy unit at target":       "目标位置没有敌方单位",
 	"Made peace with %s":            "与 %s 达成和平",
 	"Declared war on %s":            "向 %s 宣战",
+	"%s made peace with %s":         "%s 与 %s 达成和平",
+	"%s declared war on %s!":        "%s 向 %s 宣战！",
 	"%s promoted!":                  "%s 晋升了！",
 	"Failed to save: %s":            "保存失败: %s",
 	"Game saved!":                   "游戏已保存！",
+	"Game saved to slot %d!":        "游戏已保存到槽位 %d！",
 	"Need %s to build %s":           "需要 %s 才能建造 %s",
 	"Worker building %s (%d turns)": "工人建造 %s (%d 回合)",
 	"Queued: %s in %s":              "排队生产: %s (%s)",

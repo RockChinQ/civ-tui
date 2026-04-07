@@ -21,18 +21,20 @@ type Civ struct {
 	IsAlive          bool
 	Relations        map[int]RelationType
 	CityNames        []string
+	PeaceTurns       map[int]int // civID → turn when peace was made
 }
 
 func NewCiv(id int, name string, isPlayer bool) *Civ {
 	return &Civ{
-		ID:        id,
-		Name:      name,
-		Gold:      InitialGold,
-		Science:   0,
-		Techs:     make(map[string]bool),
-		IsPlayer:  isPlayer,
-		IsAlive:   true,
-		Relations: make(map[int]RelationType),
+		ID:         id,
+		Name:       name,
+		Gold:       InitialGold,
+		Science:    0,
+		Techs:      make(map[string]bool),
+		IsPlayer:   isPlayer,
+		IsAlive:    true,
+		Relations:  make(map[int]RelationType),
+		PeaceTurns: make(map[int]int),
 	}
 }
 
@@ -69,4 +71,21 @@ func (c *Civ) ProcessResearch(amount int, allTechs []*Tech) (completed string) {
 		}
 	}
 	return ""
+}
+
+// SetPeaceTurn records the turn when peace was made with the given civ.
+func (c *Civ) SetPeaceTurn(otherID, turn int) {
+	if c.PeaceTurns == nil {
+		c.PeaceTurns = make(map[int]int)
+	}
+	c.PeaceTurns[otherID] = turn
+}
+
+// GetPeaceTurn returns the turn when peace was made with the given civ.
+func (c *Civ) GetPeaceTurn(otherID int) (int, bool) {
+	if c.PeaceTurns == nil {
+		return 0, false
+	}
+	t, ok := c.PeaceTurns[otherID]
+	return t, ok
 }

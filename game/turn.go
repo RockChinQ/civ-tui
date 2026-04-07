@@ -169,9 +169,7 @@ func (g *Game) EndTurn() []GameMessage {
 	}
 
 	aiMsgs := g.RunAI()
-	for _, m := range aiMsgs {
-		msgs = append(msgs, GameMessage{Text: m})
-	}
+	msgs = append(msgs, aiMsgs...)
 
 	g.Turn++
 

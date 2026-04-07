@@ -46,6 +46,11 @@ func (m Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m, nil
 	}
 
+	// Save game slot picker
+	if m.InSaveGame {
+		return m.handleSaveGameMenu(msg)
+	}
+
 	// Destination (goto) mode
 	if m.DestMode {
 		return m.handleDestMode(msg)
@@ -142,6 +147,9 @@ func (m Model) handleMainMenu(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	if m.InNewGame {
 		return m.handleNewGameMenu(msg)
 	}
+	if m.InLoadGame {
+		return m.handleLoadGameMenu(msg)
+	}
 
 	items := 4 // New Game, Load Game, Settings, Quit
 	switch msg.String() {
@@ -159,25 +167,13 @@ func (m Model) handleMainMenu(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.InNewGame = true
 			m.NewGameCursor = 0
 		case 1: // Load Game
-			g, err := game.LoadFromFile(game.DefaultSavePath())
-			if err == nil {
-				m.Game = g
-				m.CurrentScreen = ScreenGame
-				for _, u := range g.Units {
-					if u.CivID == 1 && u.IsAlive() {
-						m.CursorX = u.X
-						m.CursorY = u.Y
-						m.SelectedUnit = u
-						break
-					}
-				}
-				m.updateReachable()
-				m.centerViewport()
-			} else {
-				// No save file, open new game setup
-				m.InNewGame = true
-				m.NewGameCursor = 0
+			m.LoadGameSaves = game.ListExistingSaves()
+			if len(m.LoadGameSaves) == 0 {
+				// No saves — stay on main menu, nothing to do
+				return m, nil
 			}
+			m.InLoadGame = true
+			m.LoadGameCursor = 0
 		case 2: // Settings
 			m.InSettings = true
 			m.SettingsCursor = 0
@@ -282,6 +278,94 @@ func (m Model) handleNewGameMenu(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		}
 	case "esc":
 		m.InNewGame = false
+	}
+	return m, nil
+}
+
+func (m Model) handleLoadGameMenu(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	saves := m.LoadGameSaves
+	// items = saves + Back
+	numItems := len(saves) + 1
+	switch msg.String() {
+	case "up", "k":
+		if m.LoadGameCursor > 0 {
+			m.LoadGameCursor--
+		}
+	case "down", "j":
+		if m.LoadGameCursor < numItems-1 {
+			m.LoadGameCursor++
+		}
+	case "enter":
+		if m.LoadGameCursor < len(saves) {
+			// Load the selected save
+			s := saves[m.LoadGameCursor]
+			g, err := game.LoadFromFile(s.Path)
+			if err == nil {
+				m.Game = g
+				m.CurrentScreen = ScreenGame
+				m.InLoadGame = false
+				for _, u := range g.Units {
+					if u.CivID == 1 && u.IsAlive() {
+						m.CursorX = u.X
+						m.CursorY = u.Y
+						m.SelectedUnit = u
+						break
+					}
+				}
+				m.updateReachable()
+				m.centerViewport()
+			}
+		} else {
+			// Back
+			m.InLoadGame = false
+		}
+	case "d", "D":
+		// Delete the currently highlighted save
+		if m.LoadGameCursor < len(saves) {
+			s := saves[m.LoadGameCursor]
+			game.DeleteSave(s.Path)
+			m.LoadGameSaves = game.ListExistingSaves()
+			if len(m.LoadGameSaves) == 0 {
+				m.InLoadGame = false
+			} else if m.LoadGameCursor >= len(m.LoadGameSaves) {
+				m.LoadGameCursor = len(m.LoadGameSaves) - 1
+			}
+		}
+	case "esc":
+		m.InLoadGame = false
+	}
+	return m, nil
+}
+
+func (m Model) handleSaveGameMenu(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	slots := m.SaveGameSlots
+	numItems := len(slots) + 1 // slots + Back
+	switch msg.String() {
+	case "up", "k":
+		if m.SaveGameCursor > 0 {
+			m.SaveGameCursor--
+		}
+	case "down", "j":
+		if m.SaveGameCursor < numItems-1 {
+			m.SaveGameCursor++
+		}
+	case "enter":
+		if m.SaveGameCursor < len(slots) {
+			s := slots[m.SaveGameCursor]
+			err := m.Game.SaveToFile(s.Path)
+			if err != nil {
+				m.Game.AddPlayerMessage(i18n.Tf("Failed to save: %s", err.Error()))
+			} else {
+				m.Game.AddPlayerMessage(i18n.Tf("Game saved to slot %d!", s.Slot))
+			}
+			m.InSaveGame = false
+			m.ActiveMenu = MenuNone
+		} else {
+			// Back
+			m.InSaveGame = false
+		}
+	case "esc", "s", "S":
+		m.InSaveGame = false
 	}
 	return m, nil
 }
