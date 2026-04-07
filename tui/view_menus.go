@@ -154,130 +154,36 @@ func (m Model) renderGameOver() string {
 }
 
 // overlayCenter places the popup string centered on top of the background string.
-// It replaces the background characters at the popup position line-by-line.
+// It uses lipgloss.Place to correctly center the popup (handling multi-byte UTF-8
+// and wide characters), then replaces background lines with the centered popup lines
+// only for the rows where the popup appears.
 func overlayCenter(bg, popup string, screenW, screenH int) string {
 	bgLines := strings.Split(bg, "\n")
-	popupLines := strings.Split(popup, "\n")
 
 	// Pad background to fill screen height
 	for len(bgLines) < screenH {
 		bgLines = append(bgLines, "")
 	}
 
-	popupH := len(popupLines)
-	popupW := 0
-	for _, line := range popupLines {
-		w := lipgloss.Width(line)
-		if w > popupW {
-			popupW = w
-		}
-	}
+	// Use lipgloss.Place to center the popup in a full-screen frame.
+	// This correctly handles multi-byte characters and ANSI sequences.
+	placed := lipgloss.Place(screenW, screenH, lipgloss.Center, lipgloss.Center, popup)
+	placedLines := strings.Split(placed, "\n")
 
+	// Determine which rows contain the popup content.
+	popupLines := strings.Split(popup, "\n")
+	popupH := len(popupLines)
 	startY := (screenH - popupH) / 2
-	startX := (screenW - popupW) / 2
 	if startY < 0 {
 		startY = 0
 	}
-	if startX < 0 {
-		startX = 0
-	}
 
-	for i, pLine := range popupLines {
-		row := startY + i
-		if row >= len(bgLines) {
-			break
-		}
-		bgLine := bgLines[row]
-		bgLines[row] = spliceRow(bgLine, pLine, startX)
+	// Replace only the popup rows in the background with the placed (centered) lines.
+	for i := startY; i < startY+popupH && i < len(bgLines) && i < len(placedLines); i++ {
+		bgLines[i] = placedLines[i]
 	}
 
 	return strings.Join(bgLines, "\n")
-}
-
-// spliceRow replaces characters in bgLine starting at column startX with the
-// popup line content. Uses ANSI-aware width calculations.
-func spliceRow(bgLine, popupLine string, startX int) string {
-	// We work at the rune/byte level, but must account for ANSI escape
-	// sequences and wide characters. A simple approach: pad the background
-	// to the required width, then concatenate prefix + popup + suffix.
-
-	bgW := lipgloss.Width(bgLine)
-
-	// Build prefix: characters from bg up to startX visual columns
-	prefix := truncateToWidth(bgLine, startX)
-	prefW := lipgloss.Width(prefix)
-	// Pad if background is narrower than startX
-	if prefW < startX {
-		prefix += strings.Repeat(" ", startX-prefW)
-	}
-
-	// Build suffix: characters from bg after the popup ends
-	popW := lipgloss.Width(popupLine)
-	afterCol := startX + popW
-	suffix := ""
-	if afterCol < bgW {
-		suffix = skipColumns(bgLine, afterCol)
-	}
-
-	return prefix + popupLine + suffix
-}
-
-// truncateToWidth returns the leading portion of s that fits within maxW
-// visual columns. ANSI escape sequences are passed through without counting
-// toward the width.
-func truncateToWidth(s string, maxW int) string {
-	if maxW <= 0 {
-		return ""
-	}
-	col := 0
-	inEsc := false
-	result := []byte{}
-	for i := 0; i < len(s); i++ {
-		b := s[i]
-		if b == '\x1b' {
-			inEsc = true
-			result = append(result, b)
-			continue
-		}
-		if inEsc {
-			result = append(result, b)
-			if (b >= 'A' && b <= 'Z') || (b >= 'a' && b <= 'z') {
-				inEsc = false
-			}
-			continue
-		}
-		if col >= maxW {
-			break
-		}
-		result = append(result, b)
-		col++
-	}
-	return string(result)
-}
-
-// skipColumns returns the portion of s starting at visual column startCol,
-// skipping over ANSI escape sequences.
-func skipColumns(s string, startCol int) string {
-	col := 0
-	inEsc := false
-	for i := 0; i < len(s); i++ {
-		b := s[i]
-		if b == '\x1b' {
-			inEsc = true
-			continue
-		}
-		if inEsc {
-			if (b >= 'A' && b <= 'Z') || (b >= 'a' && b <= 'z') {
-				inEsc = false
-			}
-			continue
-		}
-		if col >= startCol {
-			return s[i:]
-		}
-		col++
-	}
-	return ""
 }
 
 func (m Model) renderConfirmEndTurn() string {
