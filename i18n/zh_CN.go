@@ -33,7 +33,8 @@ var zhCN = map[string]string{
 
 	// --- Header ---
 	"Turn: %d  Gold: %d (+%d)  Sci: %d  %s":          "回合: %d  金币: %d (+%d)  科研: %d  %s",
-	"  [RANGED MODE - Enter to fire, Esc to cancel]": "  [远程模式 - Enter 射击, Esc 取消]",
+	"  [RANGED MODE - Enter to fire, Esc to cancel]":  "  [远程模式 - Enter 射击, Esc 取消]",
+	"  [GOTO MODE - Move cursor to destination, Enter to confirm, Esc to cancel]": "  [前往模式 - 方向键移动光标, Enter 确认, Esc 取消]",
 
 	// --- Info panel: selected unit ---
 	"SELECTED UNIT":               "选中单位",
@@ -56,6 +57,8 @@ var zhCN = map[string]string{
 	"[R] Ranged Attack":     "[R] 远程攻击",
 	"[W] Wait/Skip":         "[W] 等待/跳过",
 	"[N] Next Unit":         "[N] 下一单位",
+	"[G] Goto":              "[G] 前往",
+	"[X] Cancel Dest":       "[X] 取消目的地",
 	"[B] Build Menu":        "[B] 建造菜单",
 	"[T] Tech Menu":         "[T] 科技菜单",
 	"[D] Diplomacy":         "[D] 外交",
@@ -135,6 +138,18 @@ var zhCN = map[string]string{
 	"Visible":                                 "可见",
 	"Revealed (not in sight)":                 "已探索（不在视野内）",
 	"Visibility: ":                            "可见性: ",
+
+	// --- Info panel: selected unit destination/status ---
+	"→ Dest: (%d, %d)":  "→ 目的地: (%d, %d)",
+	"★ Building: %s":    "★ 建造中: %s",
+
+	// --- Goto mode messages ---
+	"Set destination to (%d,%d)":                             "目的地已设为 (%d,%d)",
+	"Cannot set destination on impassable terrain":           "无法在不可通行地形设置目的地",
+	"Goto mode: move cursor to destination, Enter to confirm, Esc to cancel": "前往模式: 方向键移动光标到目的地，Enter 确认，Esc 取消",
+	"Destination cancelled":                                  "目的地已取消",
+	"Unit %s cannot reach destination":                       "单位 %s 无法到达目的地",
+	"Unit %s arrived at (%d,%d)":                             "单位 %s 已到达 (%d,%d)",
 
 	// --- Action messages (update.go) ---
 	"This unit cannot perform ranged attacks":                                  "该单位无法进行远程攻击",

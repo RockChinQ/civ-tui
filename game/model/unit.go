@@ -53,6 +53,9 @@ type Unit struct {
 	Level                int
 	BuildingImprovement  ImprovementType
 	ImprovementTurnsLeft int
+	HasDest              bool // whether unit has a movement destination set
+	DestX                int  // movement destination X coordinate
+	DestY                int  // movement destination Y coordinate
 }
 
 func NewUnit(id int, utype UnitType, civID, x, y int) *Unit {
@@ -78,6 +81,16 @@ func (u *Unit) IsAlive() bool {
 
 func (u *Unit) HasMoves() bool {
 	return u.MovesLeft > 0 && !u.Waiting
+}
+
+// IsBusy returns true when the unit is performing a multi-turn task (e.g. building an improvement).
+func (u *Unit) IsBusy() bool {
+	return u.BuildingImprovement != ImprovementNone
+}
+
+// IsMovingToDest returns true when the unit has an active movement destination.
+func (u *Unit) IsMovingToDest() bool {
+	return u.HasDest
 }
 
 func (u *Unit) ResetMoves() {

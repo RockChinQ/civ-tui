@@ -147,6 +147,8 @@ func (m Model) renderHeader() string {
 		m.Game.Turn, gold, goldPT, sci, i18n.T(playerCiv.Name))
 	if m.RangeMode {
 		text += i18n.T("  [RANGED MODE - Enter to fire, Esc to cancel]")
+	} else if m.DestMode {
+		text += i18n.T("  [GOTO MODE - Move cursor to destination, Enter to confirm, Esc to cancel]")
 	}
 	return StyleHeader.Width(m.Width).Render(text)
 }
@@ -239,6 +241,10 @@ func (m Model) renderCell(x, y int) string {
 			if unit.CivID == 1 {
 				if m.SelectedUnit != nil && m.SelectedUnit.ID == unit.ID {
 					style = StyleSelectedUnit
+				} else if unit.IsBusy() {
+					style = StyleBusyUnit
+				} else if unit.IsMovingToDest() {
+					style = StyleMovingUnit
 				} else {
 					style = StylePlayerUnit
 				}
@@ -261,9 +267,15 @@ func (m Model) renderCell(x, y int) string {
 		}
 	}
 
+	// Destination marker for the selected unit's movement destination
+	isDestMarker := m.SelectedUnit != nil && m.SelectedUnit.HasDest &&
+		m.SelectedUnit.DestX == x && m.SelectedUnit.DestY == y
+
 	rendered := style.Render(ch) + " "
 	if isCursor {
 		rendered = StyleCursor.Render(ch + " ")
+	} else if isDestMarker {
+		rendered = StyleDestMarker.Render(ch + " ")
 	} else if isInRange {
 		rendered = StyleRangeHighlight.Render(ch + " ")
 	} else if isReachable {

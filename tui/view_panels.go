@@ -20,6 +20,13 @@ func (m Model) renderInfo() string {
 		sb.WriteString(i18n.Tf("Move: %d/%d  XP: %d  Lv: %d", u.MovesLeft, u.MaxMoves, u.XP, u.Level) + "\n")
 		sb.WriteString(i18n.Tf("Atk: %d  Def: %d", u.Attack, u.Defense) + "\n")
 		sb.WriteString(i18n.Tf("Pos: (%d, %d)", u.X, u.Y) + "\n")
+		if u.HasDest {
+			sb.WriteString(StyleMovingUnit.Render(i18n.Tf("→ Dest: (%d, %d)", u.DestX, u.DestY)) + "\n")
+		}
+		if u.IsBusy() {
+			impName := i18n.T(model.Improvements[u.BuildingImprovement].Name)
+			sb.WriteString(StyleBusyUnit.Render(i18n.Tf("★ Building: %s", impName)) + "\n")
+		}
 		tile := m.Game.Map.GetTile(u.X, u.Y)
 		if tile != nil {
 			t := model.Terrains[tile.Terrain]
@@ -75,6 +82,10 @@ func (m Model) renderInfo() string {
 			if model.UnitDefs[m.SelectedUnit.Type].Range > 0 {
 				sb.WriteString(i18n.T("[R] Ranged Attack") + "\n")
 			}
+		}
+		sb.WriteString(i18n.T("[G] Goto") + "\n")
+		if m.SelectedUnit.HasDest {
+			sb.WriteString(i18n.T("[X] Cancel Dest") + "\n")
 		}
 	}
 	sb.WriteString(i18n.T("[W] Wait/Skip") + "\n")

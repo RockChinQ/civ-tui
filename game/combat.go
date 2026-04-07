@@ -178,6 +178,82 @@ func (g *Game) ReachableTiles(u *model.Unit) map[[2]int]bool {
 	return reachable
 }
 
+// FindPath finds the shortest (lowest-cost) path from the unit's current position
+// to (toX, toY) using Dijkstra's algorithm. Impassable tiles are avoided; enemy
+// units are treated as passable (MoveUnit handles combat). Returns a slice of
+// [x, y] positions from the next step up to and including the destination, or nil
+// when no path exists.
+//
+// The priority queue is implemented as a plain slice with a linear minimum scan.
+// This is O(n²) but adequate for the small map sizes in this game (≤40×40 tiles).
+func (g *Game) FindPath(u *model.Unit, toX, toY int) [][2]int {
+	if u.X == toX && u.Y == toY {
+		return nil
+	}
+
+	type pqItem struct {
+		x, y int
+		cost int
+	}
+
+	start := [2]int{u.X, u.Y}
+	dest := [2]int{toX, toY}
+
+	visited := make(map[[2]int]int)   // position → min cumulative cost
+	parent := make(map[[2]int][2]int) // position → predecessor
+
+	visited[start] = 0
+	queue := []pqItem{{u.X, u.Y, 0}}
+
+	dirs := [][2]int{{0, -1}, {0, 1}, {-1, 0}, {1, 0}}
+
+	for len(queue) > 0 {
+		// Extract cheapest item (simple linear scan – maps are small)
+		minIdx := 0
+		for i := range queue {
+			if queue[i].cost < queue[minIdx].cost {
+				minIdx = i
+			}
+		}
+		cur := queue[minIdx]
+		queue = append(queue[:minIdx], queue[minIdx+1:]...)
+
+		if cur.x == toX && cur.y == toY {
+			// Reconstruct path from destination back to start
+			var path [][2]int
+			pos := dest
+			for pos != start {
+				path = append([][2]int{pos}, path...)
+				pos = parent[pos]
+			}
+			return path
+		}
+
+		for _, d := range dirs {
+			nx, ny := cur.x+d[0], cur.y+d[1]
+			if !g.Map.InBounds(nx, ny) {
+				continue
+			}
+			t := model.Terrains[g.Map.Tiles[ny][nx].Terrain]
+			if !t.Passable {
+				continue
+			}
+
+			newCost := cur.cost + t.MoveCost
+			pos := [2]int{nx, ny}
+			if prev, ok := visited[pos]; ok && prev <= newCost {
+				continue
+			}
+
+			visited[pos] = newCost
+			parent[pos] = [2]int{cur.x, cur.y}
+			queue = append(queue, pqItem{nx, ny, newCost})
+		}
+	}
+
+	return nil // no path found
+}
+
 // AbsDist is a convenience re-export for use within the game package.
 func AbsDist(x1, y1, x2, y2 int) int {
 	return worldmap.AbsDist(x1, y1, x2, y2)
