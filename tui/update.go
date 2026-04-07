@@ -90,13 +90,13 @@ func (m Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.DestMode = false
 		return m, nil
 	case "up", "k":
-		return m.moveCursorOrUnit(0, -1)
+		return m.moveCursorAndSelect(0, -1)
 	case "down", "j":
-		return m.moveCursorOrUnit(0, 1)
+		return m.moveCursorAndSelect(0, 1)
 	case "left", "h":
-		return m.moveCursorOrUnit(-1, 0)
+		return m.moveCursorAndSelect(-1, 0)
 	case "right", "l":
-		return m.moveCursorOrUnit(1, 0)
+		return m.moveCursorAndSelect(1, 0)
 	case "n", "N":
 		return m.selectNextFocus(), nil
 	case "f", "F":
@@ -286,49 +286,16 @@ func (m Model) handleNewGameMenu(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-func (m Model) moveCursorOrUnit(dx, dy int) (tea.Model, tea.Cmd) {
-	if m.SelectedUnit != nil && m.SelectedUnit.IsAlive() && m.SelectedUnit.HasMoves() {
-		u := m.SelectedUnit
-		msg, ok := m.Game.MoveUnit(u, dx, dy)
-		if ok {
-			m.CursorX = u.X
-			m.CursorY = u.Y
-			if msg != "" {
-				m.Game.AddMessage(msg)
-			}
-			if !u.IsAlive() {
-				m.SelectedUnit = nil
-				m.ReachableTiles = nil
-				// Auto-select next unit with moves
-				m = m.selectNextUnit()
-			} else if !u.HasMoves() {
-				// Unit exhausted moves, auto-select next unit
-				units := m.Game.PlayerUnitsWithMoves()
-				if len(units) > 0 {
-					m.SelectedUnit = units[0]
-					m.CursorX = units[0].X
-					m.CursorY = units[0].Y
-				}
-				m.updateReachable()
-			} else {
-				m.updateReachable()
-			}
-		} else {
-			m.moveCursor(dx, dy)
-			// Auto-select player unit at cursor position
-			cu := m.Game.GetUnitAt(m.CursorX, m.CursorY)
-			if cu != nil && cu.CivID == 1 && cu.IsAlive() {
-				m.SelectedUnit = cu
-				m.updateReachable()
-			}
-		}
-	} else {
-		m.moveCursor(dx, dy)
-		u := m.Game.GetUnitAt(m.CursorX, m.CursorY)
-		if u != nil && u.CivID == 1 && u.IsAlive() {
-			m.SelectedUnit = u
-			m.updateReachable()
-		}
+func (m Model) moveCursorAndSelect(dx, dy int) (tea.Model, tea.Cmd) {
+	m.moveCursor(dx, dy)
+	u := m.Game.GetUnitAt(m.CursorX, m.CursorY)
+	if u != nil && u.CivID == 1 && u.IsAlive() {
+		m.SelectedUnit = u
+		m.updateReachable()
+	} else if m.SelectedUnit != nil {
+		// Deselect when cursor moves away from any player unit
+		m.SelectedUnit = nil
+		m.ReachableTiles = nil
 	}
 	m.scrollViewportToCursor()
 	return m, nil
