@@ -47,6 +47,7 @@ var (
 
 	StyleSectionTitle = lipgloss.NewStyle().Bold(true).Underline(true).Foreground(lipgloss.Color("226"))
 	StyleDim          = lipgloss.NewStyle().Foreground(lipgloss.Color("240"))
+	StylePlayerMsg    = lipgloss.NewStyle().Foreground(lipgloss.Color("117"))
 	StyleBold         = lipgloss.NewStyle().Bold(true)
 	StyleGreen        = lipgloss.NewStyle().Foreground(lipgloss.Color("40"))
 	StyleRed          = lipgloss.NewStyle().Foreground(lipgloss.Color("196"))

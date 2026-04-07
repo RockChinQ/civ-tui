@@ -46,7 +46,7 @@ type Game struct {
 	Turn     int
 	MaxTurns int
 	State    GameState
-	Messages []string
+	Messages []GameMessage
 	NextID   int
 	RandSeed int64
 	Rand     *rand.Rand `json:"-"`
@@ -123,7 +123,7 @@ func NewGame(opts GameOptions) *Game {
 	}
 
 	g.RevealForCiv(1)
-	g.AddMessage(i18n.T("Turn 1: Welcome to Civ-TUI! Found a city with [F]."))
+	g.AddPlayerMessage(i18n.T("Turn 1: Welcome to Civ-TUI! Found a city with [F]."))
 
 	return g
 }
@@ -283,8 +283,21 @@ func (g *Game) RemoveUnit(u *model.Unit) {
 	u.HP = 0
 }
 
+// GameMessage represents a single message in the game log.
+type GameMessage struct {
+	Text     string `json:"text"`
+	IsPlayer bool   `json:"is_player"`
+}
+
 func (g *Game) AddMessage(msg string) {
-	g.Messages = append(g.Messages, msg)
+	g.Messages = append(g.Messages, GameMessage{Text: msg})
+	if len(g.Messages) > 50 {
+		g.Messages = g.Messages[len(g.Messages)-50:]
+	}
+}
+
+func (g *Game) AddPlayerMessage(msg string) {
+	g.Messages = append(g.Messages, GameMessage{Text: msg, IsPlayer: true})
 	if len(g.Messages) > 50 {
 		g.Messages = g.Messages[len(g.Messages)-50:]
 	}

@@ -13,7 +13,7 @@ func (m Model) foundCity() (tea.Model, tea.Cmd) {
 		return m, nil
 	}
 	msg, ok := m.Game.FoundCity(m.SelectedUnit, nil)
-	m.Game.AddMessage(msg)
+	m.Game.AddPlayerMessage(msg)
 	if ok {
 		m.SelectedUnit = nil
 		m.ReachableTiles = nil
@@ -56,11 +56,11 @@ func (m Model) enterRangeMode() (tea.Model, tea.Cmd) {
 	}
 	stats := model.UnitDefs[m.SelectedUnit.Type]
 	if stats.Range <= 0 {
-		m.Game.AddMessage(i18n.T("This unit cannot perform ranged attacks"))
+		m.Game.AddPlayerMessage(i18n.T("This unit cannot perform ranged attacks"))
 		return m, nil
 	}
 	m.RangeMode = true
-	m.Game.AddMessage(i18n.T("Ranged mode: select target with arrow keys, Enter to fire, Esc to cancel"))
+	m.Game.AddPlayerMessage(i18n.T("Ranged mode: select target with arrow keys, Enter to fire, Esc to cancel"))
 	return m, nil
 }
 
@@ -86,17 +86,17 @@ func (m Model) handleRangedMode(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			stats := model.UnitDefs[m.SelectedUnit.Type]
 			dist := worldmap.AbsDist(m.SelectedUnit.X, m.SelectedUnit.Y, m.CursorX, m.CursorY)
 			if dist > stats.Range {
-				m.Game.AddMessage(i18n.T("Target out of range"))
+				m.Game.AddPlayerMessage(i18n.T("Target out of range"))
 			} else {
 				target := m.Game.GetUnitAt(m.CursorX, m.CursorY)
 				if target != nil && target.CivID != m.SelectedUnit.CivID {
 					result := m.Game.RangedAttack(m.SelectedUnit, target)
-					m.Game.AddMessage(result)
+					m.Game.AddPlayerMessage(result)
 					if !m.SelectedUnit.IsAlive() {
 						m.SelectedUnit = nil
 					}
 				} else {
-					m.Game.AddMessage(i18n.T("No enemy unit at target"))
+					m.Game.AddPlayerMessage(i18n.T("No enemy unit at target"))
 				}
 			}
 			m.RangeMode = false
@@ -117,9 +117,9 @@ func (m Model) saveGame() (tea.Model, tea.Cmd) {
 	}
 	err := m.Game.SaveToFile(game.DefaultSavePath())
 	if err != nil {
-		m.Game.AddMessage(i18n.Tf("Failed to save: %s", err.Error()))
+		m.Game.AddPlayerMessage(i18n.Tf("Failed to save: %s", err.Error()))
 	} else {
-		m.Game.AddMessage(i18n.T("Game saved!"))
+		m.Game.AddPlayerMessage(i18n.T("Game saved!"))
 	}
 	return m, nil
 }
@@ -149,13 +149,13 @@ func (m Model) startImprovement() (tea.Model, tea.Cmd) {
 	// Check tech requirement
 	playerCiv := m.Game.GetCiv(1)
 	if impDef.RequiresTech != "" && (playerCiv == nil || !playerCiv.Techs[impDef.RequiresTech]) {
-		m.Game.AddMessage(i18n.Tf("Need %s to build %s", i18n.T(impDef.RequiresTech), i18n.T(impDef.Name)))
+		m.Game.AddPlayerMessage(i18n.Tf("Need %s to build %s", i18n.T(impDef.RequiresTech), i18n.T(impDef.Name)))
 		return m, nil
 	}
 	u.BuildingImprovement = imp
 	u.ImprovementTurnsLeft = impDef.BuildTurns
 	u.Waiting = true
-	m.Game.AddMessage(i18n.Tf("Worker building %s (%d turns)", i18n.T(impDef.Name), impDef.BuildTurns))
+	m.Game.AddPlayerMessage(i18n.Tf("Worker building %s (%d turns)", i18n.T(impDef.Name), impDef.BuildTurns))
 	return m, nil
 }
 

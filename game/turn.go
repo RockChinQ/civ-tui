@@ -5,8 +5,8 @@ import (
 	"github.com/RockChinQ/civ-tui/i18n"
 )
 
-func (g *Game) EndTurn() []string {
-	var msgs []string
+func (g *Game) EndTurn() []GameMessage {
+	var msgs []GameMessage
 
 	for _, city := range g.Cities {
 		civ := g.GetCiv(city.CivID)
@@ -16,16 +16,17 @@ func (g *Game) EndTurn() []string {
 		tile := g.Map.GetTile(city.X, city.Y)
 		prevPop := city.Population
 		built, _ := city.ProcessTurn(tile)
+		isPlayer := city.CivID == 1
 		if city.Population > prevPop {
-			msgs = append(msgs, i18n.Tf("%s grew to population %d", city.Name, city.Population))
+			msgs = append(msgs, GameMessage{Text: i18n.Tf("%s grew to population %d", city.Name, city.Population), IsPlayer: isPlayer})
 		}
 		if built != nil {
 			if built.IsUnit {
 				g.AddUnit(built.UnitType, city.CivID, city.X, city.Y)
-				msgs = append(msgs, i18n.Tf("%s trained %s", city.Name, i18n.T(built.Name)))
+				msgs = append(msgs, GameMessage{Text: i18n.Tf("%s trained %s", city.Name, i18n.T(built.Name)), IsPlayer: isPlayer})
 			} else {
 				city.Buildings[built.BuildingType] = true
-				msgs = append(msgs, i18n.Tf("%s built %s", city.Name, i18n.T(built.Name)))
+				msgs = append(msgs, GameMessage{Text: i18n.Tf("%s built %s", city.Name, i18n.T(built.Name)), IsPlayer: isPlayer})
 			}
 		}
 		civ.Gold += city.GoldYield(tile)
@@ -61,7 +62,7 @@ func (g *Game) EndTurn() []string {
 			}
 			completed := civ.ProcessResearch(civ.Science/numCities, model.AllTechs)
 			if completed != "" {
-				msgs = append(msgs, i18n.Tf("%s discovered %s!", i18n.T(civ.Name), i18n.T(completed)))
+				msgs = append(msgs, GameMessage{Text: i18n.Tf("%s discovered %s!", i18n.T(civ.Name), i18n.T(completed)), IsPlayer: civ.ID == 1})
 			}
 		}
 	}
@@ -99,7 +100,7 @@ func (g *Game) EndTurn() []string {
 				if t != nil {
 					t.Improvement = u.BuildingImprovement
 					impName := model.Improvements[u.BuildingImprovement].Name
-					msgs = append(msgs, i18n.Tf("Worker built %s at (%d,%d)", i18n.T(impName), u.X, u.Y))
+					msgs = append(msgs, GameMessage{Text: i18n.Tf("Worker built %s at (%d,%d)", i18n.T(impName), u.X, u.Y), IsPlayer: u.CivID == 1})
 				}
 				u.BuildingImprovement = model.ImprovementNone
 				u.ImprovementTurnsLeft = 0
@@ -136,7 +137,7 @@ func (g *Game) EndTurn() []string {
 		if len(path) == 0 {
 			// Already at destination or no path exists
 			if u.X != u.DestX || u.Y != u.DestY {
-				msgs = append(msgs, i18n.Tf("Unit %s cannot reach destination", i18n.T(model.UnitDefs[u.Type].Name)))
+				msgs = append(msgs, GameMessage{Text: i18n.Tf("Unit %s cannot reach destination", i18n.T(model.UnitDefs[u.Type].Name)), IsPlayer: true})
 			}
 			u.HasDest = false
 			continue
@@ -150,7 +151,7 @@ func (g *Game) EndTurn() []string {
 				break
 			}
 			if moveMsg != "" {
-				msgs = append(msgs, moveMsg)
+				msgs = append(msgs, GameMessage{Text: moveMsg, IsPlayer: true})
 			}
 			// Combat may have fired but the unit did not physically advance
 			// (e.g. both units survived). Cancel the destination so the unit
@@ -161,20 +162,22 @@ func (g *Game) EndTurn() []string {
 			}
 			if u.X == u.DestX && u.Y == u.DestY {
 				u.HasDest = false
-				msgs = append(msgs, i18n.Tf("Unit %s arrived at (%d,%d)", i18n.T(model.UnitDefs[u.Type].Name), u.DestX, u.DestY))
+				msgs = append(msgs, GameMessage{Text: i18n.Tf("Unit %s arrived at (%d,%d)", i18n.T(model.UnitDefs[u.Type].Name), u.DestX, u.DestY), IsPlayer: true})
 				break
 			}
 		}
 	}
 
 	aiMsgs := g.RunAI()
-	msgs = append(msgs, aiMsgs...)
+	for _, m := range aiMsgs {
+		msgs = append(msgs, GameMessage{Text: m})
+	}
 
 	g.Turn++
 
 	if g.Turn > g.MaxTurns {
 		g.State = StateDraw
-		msgs = append(msgs, i18n.T("Turn limit reached! Game over."))
+		msgs = append(msgs, GameMessage{Text: i18n.T("Turn limit reached! Game over."), IsPlayer: true})
 	}
 
 	g.CheckVictory()
@@ -185,7 +188,10 @@ func (g *Game) EndTurn() []string {
 	g.PurgeDeadUnits()
 
 	for _, m := range msgs {
-		g.AddMessage(m)
+		g.Messages = append(g.Messages, m)
+	}
+	if len(g.Messages) > 50 {
+		g.Messages = g.Messages[len(g.Messages)-50:]
 	}
 
 	return msgs
@@ -253,12 +259,12 @@ func (g *Game) CheckVictory() {
 	}
 	if !playerAlive {
 		g.State = StateDefeat
-		g.AddMessage(i18n.T("You have been defeated!"))
+		g.AddPlayerMessage(i18n.T("You have been defeated!"))
 		return
 	}
 	if !enemyAlive {
 		g.State = StateVictory
-		g.AddMessage(i18n.T("Domination Victory! You conquered all enemies!"))
+		g.AddPlayerMessage(i18n.T("Domination Victory! You conquered all enemies!"))
 		return
 	}
 	playerCiv := g.GetCiv(1)
@@ -272,7 +278,7 @@ func (g *Game) CheckVictory() {
 		}
 		if allDone {
 			g.State = StateVictory
-			g.AddMessage(i18n.T("Science Victory! You researched all technologies!"))
+			g.AddPlayerMessage(i18n.T("Science Victory! You researched all technologies!"))
 		}
 	}
 }

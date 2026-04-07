@@ -446,10 +446,10 @@ func (m Model) handleDestMode(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 					m.SelectedUnit.HasDest = true
 					m.SelectedUnit.DestX = m.CursorX
 					m.SelectedUnit.DestY = m.CursorY
-					m.Game.AddMessage(i18n.Tf("Set destination to (%d,%d)", m.CursorX, m.CursorY))
+					m.Game.AddPlayerMessage(i18n.Tf("Set destination to (%d,%d)", m.CursorX, m.CursorY))
 				}
 			} else {
-				m.Game.AddMessage(i18n.T("Cannot set destination on impassable terrain"))
+				m.Game.AddPlayerMessage(i18n.T("Cannot set destination on impassable terrain"))
 			}
 		}
 		m.DestMode = false
@@ -464,7 +464,7 @@ func (m Model) enterDestMode() (tea.Model, tea.Cmd) {
 		return m, nil
 	}
 	m.DestMode = true
-	m.Game.AddMessage(i18n.T("Goto mode: move cursor to destination, Enter to confirm, Esc to cancel"))
+	m.Game.AddPlayerMessage(i18n.T("Goto mode: move cursor to destination, Enter to confirm, Esc to cancel"))
 	return m, nil
 }
 
@@ -472,7 +472,7 @@ func (m Model) enterDestMode() (tea.Model, tea.Cmd) {
 func (m Model) cancelDestination() (tea.Model, tea.Cmd) {
 	if m.SelectedUnit != nil && m.SelectedUnit.HasDest {
 		m.SelectedUnit.HasDest = false
-		m.Game.AddMessage(i18n.T("Destination cancelled"))
+		m.Game.AddPlayerMessage(i18n.T("Destination cancelled"))
 		m.updateReachable()
 	}
 	return m, nil

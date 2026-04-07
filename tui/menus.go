@@ -30,7 +30,7 @@ func (m Model) handleBuildMenu(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		if city != nil && m.MenuCursor < len(items) {
 			item := items[m.MenuCursor]
 			city.ProductionQ = append(city.ProductionQ, item)
-			m.Game.AddMessage(i18n.Tf("Queued: %s in %s", i18n.T(item.Name), city.Name))
+			m.Game.AddPlayerMessage(i18n.Tf("Queued: %s in %s", i18n.T(item.Name), city.Name))
 		}
 		m.ActiveMenu = MenuNone
 	}
@@ -87,7 +87,7 @@ func (m Model) handleTechMenu(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		if m.MenuCursor < len(available) {
 			playerCiv.ResearchTech(available[m.MenuCursor])
 			playerCiv.ResearchProgress = 0
-			m.Game.AddMessage(i18n.Tf("Researching: %s", i18n.T(available[m.MenuCursor].Name)))
+			m.Game.AddPlayerMessage(i18n.Tf("Researching: %s", i18n.T(available[m.MenuCursor].Name)))
 		}
 		m.ActiveMenu = MenuNone
 	}
@@ -115,10 +115,10 @@ func (m Model) handleDiplomacyMenu(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 				rel := m.Game.GetRelation(1, target.ID)
 				if rel == model.RelationWar {
 					m.Game.MakePeace(player, target)
-					m.Game.AddMessage(i18n.Tf("Made peace with %s", i18n.T(target.Name)))
+					m.Game.AddPlayerMessage(i18n.Tf("Made peace with %s", i18n.T(target.Name)))
 				} else {
 					m.Game.DeclareWar(player, target)
-					m.Game.AddMessage(i18n.Tf("Declared war on %s", i18n.T(target.Name)))
+					m.Game.AddPlayerMessage(i18n.Tf("Declared war on %s", i18n.T(target.Name)))
 				}
 			}
 		}
@@ -162,7 +162,7 @@ func (m Model) handlePromotionMenu(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		if m.PendingPromotion != nil {
 			m.PendingPromotion.Attack++
 			m.PendingPromotion.XP -= 5
-			m.Game.AddMessage(i18n.Tf("%s promoted!", i18n.T(model.UnitDefs[m.PendingPromotion.Type].Name)))
+			m.Game.AddPlayerMessage(i18n.Tf("%s promoted!", i18n.T(model.UnitDefs[m.PendingPromotion.Type].Name)))
 			m.PendingPromotion = nil
 		}
 		m.ActiveMenu = MenuNone

@@ -196,10 +196,15 @@ func (m Model) renderMessages() string {
 	msgs = msgs[start:]
 	sb.WriteString(StyleSectionTitle.Render(i18n.T("Messages:")) + "\n")
 	for _, msg := range msgs {
-		if len(msg) > m.Width-6 {
-			msg = msg[:m.Width-6]
+		text := msg.Text
+		if len(text) > m.Width-6 {
+			text = text[:m.Width-6]
 		}
-		sb.WriteString(StyleDim.Render(msg) + "\n")
+		if msg.IsPlayer {
+			sb.WriteString(StylePlayerMsg.Render("▸ "+text) + "\n")
+		} else {
+			sb.WriteString(StyleDim.Render("  "+text) + "\n")
+		}
 	}
 	w := m.Width - 2
 	if w < 10 {
