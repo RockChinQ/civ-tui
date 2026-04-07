@@ -254,7 +254,11 @@ func (g *Game) aiMilitaryAction(civ *model.Civ, u *model.Unit, msgs *[]GameMessa
 		msg, ok := g.MoveUnit(u, d[0], d[1])
 		if ok {
 			if msg != "" {
-				*msgs = append(*msgs, GameMessage{Text: msg, IsPlayer: involvesPlayer})
+				// Only show combat messages if the player can see the tile or is involved
+				tile := g.Map.GetTile(targetX, targetY)
+				if involvesPlayer || (tile != nil && tile.Visible) {
+					*msgs = append(*msgs, GameMessage{Text: msg, IsPlayer: involvesPlayer})
+				}
 			}
 			return true
 		}
