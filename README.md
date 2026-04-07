@@ -10,16 +10,18 @@ Build cities, research technologies, command armies, negotiate diplomacy -- all 
 
 ## Features
 
-**Complete 4X Gameplay Loop** -- Explore, Expand, Exploit, Exterminate in ~3,500 lines of Go.
+**Complete 4X Gameplay Loop** -- Explore, Expand, Exploit, Exterminate in ~4,700 lines of Go.
 
-- **Procedural Maps** -- Fractal noise terrain generation with continent-style layouts. 9 terrain types, 3 map sizes, fog of war
+- **Procedural Maps** -- Fractal noise terrain generation with continent-style layouts. 9 terrain types, 3 map sizes, fog of war, coordinate grid labels
 - **8 Unit Types** -- Settlers, Scouts, Warriors, Archers, Spearmen, Swordsmen, Horsemen, Workers -- each with unique stats
 - **City Building** -- Found cities, manage population growth, construct buildings, queue production
 - **11-Tech Tree** -- Research technologies to unlock advanced units, buildings, and improvements
-- **Combat System** -- Melee & ranged combat, terrain defense bonuses, experience & leveling
+- **Combat System** -- Melee & ranged combat, terrain defense bonuses, experience & leveling, combat logs with civ names and coordinates
+- **Pathfinding & Goto** -- Set movement destinations with Dijkstra pathfinding; units auto-advance each turn. Reachable tiles highlighted via BFS flood-fill
 - **Diplomacy** -- Declare war, negotiate peace. Multiple AI civilizations with strategic decision-making
 - **5 Civilizations** -- Rome, Mongolia, Egypt, China, Greece -- each with historical city names
 - **Workers & Improvements** -- Build farms, mines, roads, and lumber mills to boost your economy
+- **Bilingual (EN/ZH)** -- Full English and Simplified Chinese support with automatic system language detection
 - **Save/Load** -- Full game state persistence via JSON. Pick up where you left off
 - **Multiple Victory Conditions** -- Domination, Science, or survive to turn 200
 
@@ -40,25 +42,31 @@ cd civ-tui
 make run
 ```
 
-**Requirements:** Go 1.24+, a terminal with 256-color support.
+### Download Prebuilt Binaries
+
+Prebuilt binaries for Linux, macOS, and Windows are available on the [Releases](https://github.com/RockChinQ/civ-tui/releases) page.
+
+**Requirements:** Go 1.24+ (for building from source), a terminal with 256-color support.
 
 ## Controls
 
 | Key | Action |
 |-----|--------|
 | `Arrow keys` / `hjkl` | Move cursor / selected unit |
-| `Enter` | End turn / view city details |
+| `Enter` | End turn |
 | `F` | Found city (Settler) |
 | `B` | Open build menu (on your city) |
 | `T` | Tech research menu |
 | `D` | Diplomacy menu |
 | `R` | Ranged attack mode (Archer) |
 | `I` | Build improvement (Worker) |
-| `V` | Inspect tile details |
+| `V` | View city details (own city) / inspect tile |
+| `G` | Set movement destination (Goto mode) |
+| `X` | Cancel unit's movement destination |
 | `W` | Wait / skip unit turn |
-| `N` | Cycle to next unit |
+| `N` | Cycle to next unit or city needing attention |
 | `S` | Save game |
-| `Esc` | Deselect / close menu |
+| `Esc` | Deselect / close menu / cancel mode |
 | `?` | Help screen |
 | `Q` | Quit |
 
@@ -66,7 +74,7 @@ Vim users rejoice -- `hjkl` navigation works everywhere.
 
 ## Game Settings
 
-Configure from the main menu before starting:
+Configure from the **New Game** screen before starting:
 
 | Setting | Options |
 |---------|---------|
@@ -74,29 +82,18 @@ Configure from the main menu before starting:
 | AI Opponents | 1 - 4 |
 | Difficulty | Easy, Normal, Hard |
 
+Language can be changed in the **Settings** menu (English / 简体中文). The game auto-detects your system language on first launch and saves the preference to `~/.civ-tui/config.json`.
+
 ## Architecture
 
 ```
-civ-tui/
+civ-tui/                 (~4,700 lines of Go)
 ├── main.go              # Entry point
+├── i18n/                # Internationalization (EN / ZH)
 ├── game/                # Game logic (zero TUI dependencies)
-│   ├── game.go          # Core engine: turns, combat, AI orchestration
-│   ├── ai.go            # AI decision-making
-│   ├── save.go          # Save/load system
-│   ├── model/           # Domain models
-│   │   ├── tile.go      #   Terrain types, improvements
-│   │   ├── unit.go      #   Unit definitions & stats
-│   │   ├── city.go      #   City & building system
-│   │   ├── civ.go       #   Civilization state
-│   │   └── tech.go      #   Technology tree
-│   └── worldmap/        # Procedural map generation
-│       ├── map.go       #   Map structure, fog of war
-│       └── noise.go     #   Fractal noise generator
+│   ├── model/           #   Domain models (unit, city, civ, tech, tile)
+│   └── worldmap/        #   Procedural map generation
 └── tui/                 # Terminal UI (Bubble Tea)
-    ├── model.go         #   Application state
-    ├── view.go          #   Rendering
-    ├── update.go        #   Input handling
-    └── styles.go        #   Colors & styles
 ```
 
 Game logic is fully decoupled from the TUI layer -- the `game/` package has zero UI imports, making it independently testable.
@@ -122,7 +119,6 @@ make clean    # Clean build artifacts
 
 All 7 core development phases are complete. Future directions include:
 
-- Pathfinding & movement range visualization
 - Strategic & luxury resources
 - Naval units
 - Rivers & advanced terrain
@@ -131,7 +127,7 @@ All 7 core development phases are complete. Future directions include:
 - Trade routes
 - Mouse support
 - Battle animations
-- Multi-language support
+- More unit types and civilizations
 
 ## License
 
