@@ -46,6 +46,11 @@ func (m Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m, nil
 	}
 
+	// End-turn confirmation popup
+	if m.ConfirmEndTurn {
+		return m.handleConfirmEndTurn(msg)
+	}
+
 	// Save game slot picker
 	if m.InSaveGame {
 		return m.handleSaveGameMenu(msg)
@@ -135,7 +140,9 @@ func (m Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		}
 		return m, nil
 	case "enter":
-		return m.endTurn()
+		m.ConfirmEndTurn = true
+		m.ConfirmCursor = 0
+		return m, nil
 	}
 	return m, nil
 }
@@ -558,6 +565,34 @@ func (m Model) cancelDestination() (tea.Model, tea.Cmd) {
 		m.SelectedUnit.HasDest = false
 		m.Game.AddPlayerMessage(i18n.T("Destination cancelled"))
 		m.updateReachable()
+	}
+	return m, nil
+}
+
+// handleConfirmEndTurn processes keys inside the end-turn confirmation popup.
+func (m Model) handleConfirmEndTurn(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	switch msg.String() {
+	case "up", "k":
+		if m.ConfirmCursor > 0 {
+			m.ConfirmCursor--
+		}
+	case "down", "j":
+		if m.ConfirmCursor < 1 {
+			m.ConfirmCursor++
+		}
+	case "enter":
+		if m.ConfirmCursor == 0 {
+			// Yes — end the turn
+			m.ConfirmEndTurn = false
+			return m.endTurn()
+		}
+		// No — cancel
+		m.ConfirmEndTurn = false
+	case "esc", "n", "N":
+		m.ConfirmEndTurn = false
+	case "y", "Y":
+		m.ConfirmEndTurn = false
+		return m.endTurn()
 	}
 	return m, nil
 }

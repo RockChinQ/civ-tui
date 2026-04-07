@@ -33,30 +33,50 @@ func (m Model) View() string {
 		return i18n.T("Loading game...")
 	}
 
+	// Always render the game background first
+	bg := m.renderGameBG()
+
+	// End-turn confirmation overlay
+	if m.ConfirmEndTurn {
+		popup := m.renderConfirmEndTurn()
+		return overlayCenter(bg, popup, m.Width, m.Height)
+	}
+
 	// Save game slot picker overlay
 	if m.InSaveGame {
-		return m.renderSaveGame()
+		popup := StylePopup.Width(44).Render(m.renderSaveGameContent())
+		return overlayCenter(bg, popup, m.Width, m.Height)
 	}
 
 	if m.ActiveMenu == MenuHelp {
-		return m.renderHelp()
+		popup := StylePopup.Width(m.Width - 10).Render(i18n.HelpText())
+		return overlayCenter(bg, popup, m.Width, m.Height)
 	}
 
 	// Popup menus
 	switch m.ActiveMenu {
 	case MenuBuild, MenuTech:
-		return m.renderAsPopup(m.renderMenu(), 52)
+		popup := StylePopup.Width(52).Render(m.renderMenu())
+		return overlayCenter(bg, popup, m.Width, m.Height)
 	case MenuDiplomacy:
-		return m.renderAsPopup(m.renderDiplomacy(), 52)
+		popup := StylePopup.Width(52).Render(m.renderDiplomacy())
+		return overlayCenter(bg, popup, m.Width, m.Height)
 	case MenuCity:
 		city := m.Game.GetCityAt(m.CursorX, m.CursorY)
 		if city != nil {
-			return m.renderAsPopup(m.renderCityDetails(city), 52)
+			popup := StylePopup.Width(52).Render(m.renderCityDetails(city))
+			return overlayCenter(bg, popup, m.Width, m.Height)
 		}
 	case MenuInspect:
-		return m.renderAsPopup(m.renderInspect(), 52)
+		popup := StylePopup.Width(52).Render(m.renderInspect())
+		return overlayCenter(bg, popup, m.Width, m.Height)
 	}
 
+	return bg
+}
+
+// renderGameBG renders the full game view (header + map + info + messages).
+func (m Model) renderGameBG() string {
 	header := m.renderHeader()
 	mapPanel := m.renderMap()
 	infoPanel := m.renderInfo()
@@ -352,7 +372,7 @@ func (m Model) renderLoadGame() string {
 	return StyleInfoPanel.Width(m.Width - 4).Height(m.Height - 2).Render(sb.String())
 }
 
-func (m Model) renderSaveGame() string {
+func (m Model) renderSaveGameContent() string {
 	var sb strings.Builder
 	sb.WriteString(StyleSectionTitle.Render(i18n.T("SAVE GAME")) + "\n\n")
 
@@ -375,5 +395,5 @@ func (m Model) renderSaveGame() string {
 	}
 
 	sb.WriteString("\n" + StyleDim.Render(i18n.T("[Enter] Save  [Esc] Back")))
-	return StyleInfoPanel.Width(m.Width - 4).Height(m.Height - 2).Render(sb.String())
+	return sb.String()
 }

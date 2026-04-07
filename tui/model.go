@@ -62,6 +62,8 @@ type Model struct {
 	DestMode           bool // true when player is selecting a movement destination
 	PendingPromotion   *model.Unit
 	ReachableTiles     map[[2]int]bool // cached reachable tiles for selected unit
+	ConfirmEndTurn     bool            // true when showing end-turn confirmation popup
+	ConfirmCursor      int             // 0=Yes, 1=No in the confirmation popup
 }
 
 func NewModel() Model {

@@ -268,4 +268,11 @@ var zhCN = map[string]string{
 	"Egypt":        "埃及",
 	"China":        "中国",
 	"Greece":       "希腊",
+
+	// --- End-turn confirmation ---
+	"END TURN":                               "结束回合",
+	"Are you sure you want to end the turn?": "确定要结束回合吗？",
+	"Yes":                                    "是",
+	"No":                                     "否",
+	"[Enter] Confirm  [Esc] Cancel":          "[Enter] 确认  [Esc] 取消",
 }
