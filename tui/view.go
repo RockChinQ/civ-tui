@@ -106,7 +106,8 @@ func (m Model) renderMainMenu() string {
 		}
 	}
 	sb.WriteString("\n" + StyleDim.Render(i18n.T("[↑/↓] Navigate  [Enter] Select  [Q] Quit")))
-	return StyleInfoPanel.Width(m.Width - 4).Height(m.Height - 2).Render(sb.String())
+	popup := StylePopup.Width(44).Render(sb.String())
+	return lipgloss.Place(m.Width, m.Height, lipgloss.Center, lipgloss.Center, popup)
 }
 
 func (m Model) renderSettings() string {
@@ -126,7 +127,8 @@ func (m Model) renderSettings() string {
 		}
 	}
 	sb.WriteString("\n" + StyleDim.Render(i18n.T("[←/→] Change value  [Enter/Esc] Back")))
-	return StyleInfoPanel.Width(m.Width - 4).Height(m.Height - 2).Render(sb.String())
+	popup := StylePopup.Width(44).Render(sb.String())
+	return lipgloss.Place(m.Width, m.Height, lipgloss.Center, lipgloss.Center, popup)
 }
 
 func (m Model) renderNewGame() string {
@@ -152,7 +154,8 @@ func (m Model) renderNewGame() string {
 		}
 	}
 	sb.WriteString("\n" + StyleDim.Render(i18n.T("[←/→] Change value  [Enter] Select  [Esc] Back")))
-	return StyleInfoPanel.Width(m.Width - 4).Height(m.Height - 2).Render(sb.String())
+	popup := StylePopup.Width(50).Render(sb.String())
+	return lipgloss.Place(m.Width, m.Height, lipgloss.Center, lipgloss.Center, popup)
 }
 
 func (m Model) renderHeader() string {
@@ -369,7 +372,8 @@ func (m Model) renderLoadGame() string {
 	}
 
 	sb.WriteString("\n" + StyleDim.Render(i18n.T("[Enter] Load  [D] Delete  [Esc] Back")))
-	return StyleInfoPanel.Width(m.Width - 4).Height(m.Height - 2).Render(sb.String())
+	popup := StylePopup.Width(44).Render(sb.String())
+	return lipgloss.Place(m.Width, m.Height, lipgloss.Center, lipgloss.Center, popup)
 }
 
 func (m Model) renderSaveGameContent() string {
