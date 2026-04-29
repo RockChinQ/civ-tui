@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>civ-tui :: web</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="app">
+    <div id="topbar">
+      <span id="status">Loading…</span>
+      <span class="spacer"></span>
+      <button id="btn-end-turn" title="End Turn (Space)">End Turn</button>
+      <button id="btn-build" title="Build (B)">Build</button>
+      <button id="btn-tech" title="Research (T)">Research</button>
+      <button id="btn-save">Save</button>
+      <button id="btn-load">Load</button>
+      <button id="btn-new">New</button>
+    </div>
+
+    <div id="main">
+      <div id="map-wrap">
+        <div id="map"></div>
+        <div id="legend">
+          <span class="lg" data-t="ocean">~ Ocean</span>
+          <span class="lg" data-t="coast">≈ Coast</span>
+          <span class="lg" data-t="grass">. Grass</span>
+          <span class="lg" data-t="plains">, Plains</span>
+          <span class="lg" data-t="hills">^ Hills</span>
+          <span class="lg" data-t="mtn">M Mountain</span>
+          <span class="lg" data-t="forest">♣ Forest</span>
+          <span class="lg" data-t="desert">_ Desert</span>
+          <span class="lg" data-t="tundra">; Tundra</span>
+        </div>
+      </div>
+
+      <div id="side">
+        <section id="info">
+          <h3>Tile</h3>
+          <div id="tile-info"></div>
+        </section>
+        <section id="unit-info">
+          <h3>Selection</h3>
+          <div id="unit-detail"></div>
+          <div id="unit-actions"></div>
+        </section>
+        <section id="civ-info">
+          <h3>Civ</h3>
+          <div id="civ-detail"></div>
+        </section>
+        <section id="messages-section">
+          <h3>Log</h3>
+          <div id="messages"></div>
+        </section>
+      </div>
+    </div>
+
+    <div id="hint">
+      Click tile to select. Arrows/WASD move cursor; click adjacent tile to move/attack.
+      <b>F</b> found city · <b>B</b> build · <b>T</b> research · <b>R</b> ranged · <b>G</b> set dest · <b>Z</b> wait · <b>I</b> improve · <b>Space</b> end turn · <b>Esc</b> deselect
+    </div>
+
+    <div id="modal" class="hidden">
+      <div class="modal-box">
+        <div class="modal-header">
+          <span id="modal-title"></span>
+          <button id="modal-close">×</button>
+        </div>
+        <div id="modal-body"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
