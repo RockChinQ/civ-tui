@@ -1,8 +1,8 @@
 # civ-tui
 
-**A full-featured Civilization-style 4X strategy game that runs entirely in your terminal.**
+**A full-featured Civilization-style 4X strategy game with both terminal and local Web UI modes.**
 
-Build cities, research technologies, command armies, negotiate diplomacy -- all from the comfort of your command line. No GUI, no browser, no game engine. Just you, your terminal, and the quest for world domination.
+Build cities, research technologies, command armies, and negotiate diplomacy from a fast terminal UI. Prefer a browser? Run the built-in single-player Web UI locally and play the same core game through a character-map interface. No external game engine required.
 
 ![Game Screen](docs/gamescreen.png)
 
@@ -10,7 +10,7 @@ Build cities, research technologies, command armies, negotiate diplomacy -- all 
 
 ## Features
 
-**Complete 4X Gameplay Loop** -- Explore, Expand, Exploit, Exterminate in ~4,700 lines of Go.
+**Complete 4X Gameplay Loop** -- Explore, Expand, Exploit, Exterminate in ~5,900 lines of Go.
 
 - **Procedural Maps** -- Fractal noise terrain generation with continent-style layouts. 9 terrain types, 3 map sizes, fog of war, coordinate grid labels
 - **8 Unit Types** -- Settlers, Scouts, Warriors, Archers, Spearmen, Swordsmen, Horsemen, Workers -- each with unique stats
@@ -22,7 +22,8 @@ Build cities, research technologies, command armies, negotiate diplomacy -- all 
 - **5 Civilizations** -- Rome, Mongolia, Egypt, China, Greece -- each with historical city names
 - **Workers & Improvements** -- Build farms, mines, roads, and lumber mills to boost your economy
 - **Bilingual (EN/ZH)** -- Full English and Simplified Chinese support with automatic system language detection
-- **Save/Load** -- Full game state persistence via JSON. Pick up where you left off
+- **TUI + Local Web UI** -- Play in the terminal by default, or start an embedded browser UI with `-web`
+- **Save/Load** -- Full game state persistence via JSON with 10 save slots. Pick up where you left off
 - **Multiple Victory Conditions** -- Domination, Science, or survive to turn 200
 
 ## Quick Start
@@ -42,13 +43,28 @@ cd civ-tui
 make run
 ```
 
+### Run the Web UI
+
+The Web UI is a single-player local mode served by the same Go binary. It uses the shared `game/` package, keeps one active game in the server process, and stores saves in the same `~/.civ-tui/saves/` directory as the TUI.
+
+```bash
+go run . -web
+# then open http://127.0.0.1:8080
+```
+
+Use a different bind address if needed:
+
+```bash
+go run . -web -addr 127.0.0.1:9090
+```
+
 ### Download Prebuilt Binaries
 
 Prebuilt binaries for Linux, macOS, and Windows are available on the [Releases](https://github.com/RockChinQ/civ-tui/releases) page.
 
 **Requirements:** Go 1.24+ (for building from source), a terminal with 256-color support.
 
-## Controls
+## TUI Controls
 
 | Key | Action |
 |-----|--------|
@@ -72,6 +88,27 @@ Prebuilt binaries for Linux, macOS, and Windows are available on the [Releases](
 
 Vim users rejoice -- `hjkl` navigation works everywhere.
 
+## Web UI Controls
+
+The Web UI supports mouse and keyboard input:
+
+| Input | Action |
+|-------|--------|
+| `Click tile` | Move cursor / select friendly unit / move or attack adjacent tile |
+| `Arrow keys` / `WASD` / `hjkl` | Move cursor |
+| `Enter` | Move selected unit to cursor if adjacent |
+| `F` | Found city (Settler) |
+| `B` | Open build menu |
+| `T` | Research menu |
+| `R` | Ranged attack mode |
+| `G` | Set movement destination |
+| `Z` | Wait / skip unit turn |
+| `I` | Build improvement (Worker) |
+| `Space` | End turn |
+| `Esc` | Cancel mode / deselect |
+
+Top bar buttons provide New, Save, Load, Build, Research, and End Turn actions. See [Web UI docs](docs/WEB_UI.md) for API details and current limitations.
+
 ## Game Settings
 
 Configure from the **New Game** screen before starting:
@@ -80,29 +117,32 @@ Configure from the **New Game** screen before starting:
 |---------|---------|
 | Map Size | Small (40x25), Medium (60x35), Large (80x48) |
 | AI Opponents | 1 - 4 |
-| Difficulty | Easy, Normal, Hard |
+| Difficulty | 3 levels (TUI: Easy/Normal/Hard; Web UI: Normal/Hard/Brutal) |
 
 Language can be changed in the **Settings** menu (English / 简体中文). The game auto-detects your system language on first launch and saves the preference to `~/.civ-tui/config.json`.
 
 ## Architecture
 
 ```
-civ-tui/                 (~4,700 lines of Go)
+civ-tui/                 (~5,900 lines of Go)
 ├── main.go              # Entry point
 ├── i18n/                # Internationalization (EN / ZH)
 ├── game/                # Game logic (zero TUI dependencies)
 │   ├── model/           #   Domain models (unit, city, civ, tech, tile)
 │   └── worldmap/        #   Procedural map generation
-└── tui/                 # Terminal UI (Bubble Tea)
+├── tui/                 # Terminal UI (Bubble Tea)
+└── web/                 # Local Web UI server, JSON API, embedded static assets
 ```
 
-Game logic is fully decoupled from the TUI layer -- the `game/` package has zero UI imports, making it independently testable.
+Game logic is fully decoupled from the UI layers -- the `game/` package has zero TUI or Web UI imports, making it independently testable and reusable by both front ends.
 
 ## Tech Stack
 
 - **[Go](https://go.dev/)** -- Simple, fast, compiles to a single binary
 - **[Bubble Tea](https://github.com/charmbracelet/bubbletea)** -- Elm Architecture for terminal apps
 - **[Lipgloss](https://github.com/charmbracelet/lipgloss)** -- Terminal styling and layout
+- **Go `net/http` + embedded static assets** -- Single-binary local Web UI
+- **Vanilla HTML/CSS/JS** -- Lightweight browser client without a frontend build step
 - **Custom fractal noise** -- No external dependencies for map generation
 
 ## Development
@@ -110,6 +150,7 @@ Game logic is fully decoupled from the TUI layer -- the `game/` package has zero
 ```bash
 make build    # Compile
 make run      # Build and run
+go run . -web # Run the local Web UI on 127.0.0.1:8080
 make test     # Run tests
 make lint     # Run go vet
 make clean    # Clean build artifacts
@@ -117,7 +158,7 @@ make clean    # Clean build artifacts
 
 ## Roadmap
 
-All 7 core development phases are complete. Future directions include:
+All core gameplay phases are complete, and the local Web UI mode is available. Future directions include:
 
 - Strategic & luxury resources
 - Naval units
@@ -125,8 +166,9 @@ All 7 core development phases are complete. Future directions include:
 - Culture, religion, and policy systems
 - World wonders
 - Trade routes
-- Mouse support
+- TUI mouse support
 - Battle animations
+- Web UI parity improvements (diplomacy screen, help overlay, richer city management)
 - More unit types and civilizations
 
 ## License
